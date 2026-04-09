@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "AUTOGET",
+    "slug": "autoget",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0D1117"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.autoget.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0D1117"
+      },
+      "package": "com.autoget.app",
+      "softwareKeyboardLayoutMode": "pan"
+    },
+    "web": {
+      
+    }
+    ,
+    "extra": {
+      "appCity": "Samambaia, Brasília/DF"
+    }
+  }
+}
