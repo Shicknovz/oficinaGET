@@ -7,6 +7,8 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import IntroScreen from './src/screens/IntroScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import MainTabs from './src/navigation/MainTabs';
 import { readStorage, writeStorage } from './src/utils/storage';
 
@@ -18,12 +20,16 @@ interface AppUiState {
   loggedIn: boolean;
   showIntro: boolean;
   showRegister: boolean;
+  showForgotPassword: boolean;
+  showChangePassword: boolean;
 }
 
 const DEFAULT_UI_STATE: AppUiState = {
   loggedIn: false,
   showIntro: true,
   showRegister: false,
+  showForgotPassword: false,
+  showChangePassword: false,
 };
 
 export default function App() {
@@ -31,14 +37,18 @@ export default function App() {
   const [loggedIn, setLoggedIn] = useState(initialUiState.loggedIn);
   const [showIntro, setShowIntro] = useState(initialUiState.showIntro);
   const [showRegister, setShowRegister] = useState(initialUiState.showRegister);
+  const [showForgotPassword, setShowForgotPassword] = useState(initialUiState.showForgotPassword);
+  const [showChangePassword, setShowChangePassword] = useState(initialUiState.showChangePassword);
 
   useEffect(() => {
     writeStorage(APP_UI_STATE_KEY, {
       loggedIn,
       showIntro,
       showRegister,
+      showForgotPassword,
+      showChangePassword,
     });
-  }, [loggedIn, showIntro, showRegister]);
+  }, [loggedIn, showIntro, showRegister, showForgotPassword, showChangePassword]);
 
   return (
     <ThemeProvider>
@@ -47,13 +57,24 @@ export default function App() {
         <NavigationContainer>
           <AppProvider>
             {loggedIn ? (
-              <MainTabs onLogout={() => {
-                setLoggedIn(false);
-                setShowRegister(false);
-                setShowIntro(false);
-              }} />
+              showChangePassword ? (
+                <ChangePasswordScreen onBack={() => setShowChangePassword(false)} />
+              ) : (
+                <MainTabs
+                  onLogout={() => {
+                    setLoggedIn(false);
+                    setShowRegister(false);
+                    setShowIntro(false);
+                    setShowForgotPassword(false);
+                    setShowChangePassword(false);
+                  }}
+                  onChangePassword={() => setShowChangePassword(true)}
+                />
+              )
             ) : showRegister ? (
               <RegisterScreen onRegister={() => { setShowRegister(false); setShowIntro(false); }} onBack={() => setShowRegister(false)} />
+            ) : showForgotPassword ? (
+              <ForgotPasswordScreen onBack={() => setShowForgotPassword(false)} />
             ) : showIntro ? (
               <IntroScreen onLogin={() => setShowIntro(false)} onRegister={() => setShowRegister(true)} onSkip={() => setShowIntro(false)} />
             ) : (
@@ -61,6 +82,7 @@ export default function App() {
                 onLogin={() => setLoggedIn(true)} 
                 onBack={() => setShowIntro(true)} 
                 onRegister={() => setShowRegister(true)}
+                onForgotPassword={() => setShowForgotPassword(true)}
               />
             )}
           </AppProvider>

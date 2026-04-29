@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import AuthLayout from '../components/AuthLayout';
 
 interface Props {
   onRegister: () => void;
@@ -24,88 +26,93 @@ export default function RegisterScreen({ onRegister, onBack }: Props) {
     }, 1000);
   };
 
-  return (
-    <KeyboardAvoidingView style={[styles.container, { backgroundColor: t.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.content}>
-        <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-          {onBack && (
-            <Button title="Voltar" onPress={onBack} size="small" />
-          )}
-        </View>
-        <View style={styles.logoContainer}>
-          <View style={[styles.logoCircle, { backgroundColor: t.bgCard, borderColor: t.primary }]}> 
-            <Text style={[styles.logoIcon, { color: t.primary }]}>🔧</Text>
-          </View>
-          <Text style={[styles.title, { color: t.text }]}>AUTOGET</Text>
-          <Text style={[styles.subtitle, { color: t.textSecondary }]}>Crie sua conta</Text>
-        </View>
-        {Platform.OS === 'web' ? (
-          <form style={styles.form as any} onSubmit={(event) => { event.preventDefault(); handleRegister(); }}>
-            <Input
-              label="Nome"
-              placeholder="Seu nome completo"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-            <Input
-              label="E-mail"
-              placeholder="seu@email.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-            <Input
-              label="Senha"
-              placeholder="Crie uma senha"
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-            />
-            <Button title="Cadastrar" onPress={handleRegister} fullWidth icon="person-add" loading={loading} />
-          </form>
-        ) : (
-          <View style={styles.form}>
-            <Input
-              label="Nome"
-              placeholder="Seu nome completo"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-            <Input
-              label="E-mail"
-              placeholder="seu@email.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-            <Input
-              label="Senha"
-              placeholder="Crie uma senha"
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-            />
-            <Button title="Cadastrar" onPress={handleRegister} fullWidth icon="person-add" loading={loading} />
-          </View>
-        )}
+  const formContent = (
+    <>
+      <Input
+        label="Nome"
+        placeholder="Seu nome completo"
+        value={name}
+        onChangeText={setName}
+        autoCapitalize="words"
+      />
+      <Input
+        label="E-mail"
+        placeholder="seu@email.com"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+      />
+      <Input
+        label="Senha"
+        placeholder="Crie uma senha"
+        value={senha}
+        onChangeText={setSenha}
+        secureTextEntry
+      />
+      <Button title="Criar cadastro" onPress={handleRegister} fullWidth icon="person-add" loading={loading} />
+    </>
+  );
+
+  const footer = (
+    <>
+      <View style={[styles.tipCard, { backgroundColor: t.bgInput, borderColor: t.border }]}> 
+        <Ionicons name="sparkles-outline" size={18} color={t.primary} />
+        <Text style={[styles.tipText, { color: t.textSecondary }]}>Seu cadastro ajuda a oficina a oferecer um atendimento mais rápido, personalizado e organizado.</Text>
       </View>
-    </KeyboardAvoidingView>
+      {!!onBack && (
+        <Pressable onPress={onBack} style={({ pressed }) => [styles.footerLinkWrap, { opacity: pressed ? 0.72 : 1 }]}>
+          <Text style={[styles.footerLink, { color: t.primary }]}>Já tem conta? Voltar para o login</Text>
+        </Pressable>
+      )}
+    </>
+  );
+
+  return (
+    <AuthLayout
+      eyebrow="Novo cadastro"
+      title="Cadastre-se para acompanhar revisões, serviços e o histórico do seu veículo com facilidade."
+      subtitle="Seu acesso deixa a comunicação com a oficina mais simples, organizada e transparente desde o primeiro atendimento."
+      cardTitle="Crie seu acesso"
+      cardSubtitle="Preencha seus dados para consultar serviços, receber atualizações e manter seu veículo sempre acompanhado."
+      onBack={onBack}
+      backgroundImage="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80"
+      footer={footer}
+    >
+      {Platform.OS === 'web' ? (
+        <form style={styles.form as any} onSubmit={(event) => { event.preventDefault(); handleRegister(); }}>
+          {formContent}
+        </form>
+      ) : (
+        <View style={styles.form}>{formContent}</View>
+      )}
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
-  logoContainer: { alignItems: 'center', marginBottom: 48 },
-  logoCircle: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center', borderWidth: 2, marginBottom: 16 },
-  logoIcon: { fontSize: 42 },
-  title: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, marginTop: 6 },
-  form: { marginTop: 8 },
+  form: { marginTop: 4 },
+  tipCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
+    marginLeft: 10,
+  },
+  footerLinkWrap: {
+    alignSelf: 'center',
+    marginTop: 16,
+    paddingVertical: 6,
+  },
+  footerLink: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });

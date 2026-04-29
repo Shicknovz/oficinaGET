@@ -26,6 +26,11 @@ export default function AppMenuButton() {
     menu.onLogout();
   };
 
+  const handleChangePassword = () => {
+    setVisible(false);
+    menu.onChangePassword();
+  };
+
   return (
     <>
       <TouchableOpacity onPress={() => setVisible(true)} style={[styles.menuBtn, { backgroundColor: t.bgCard }]} activeOpacity={0.85}>
@@ -50,6 +55,9 @@ export default function AppMenuButton() {
               </TouchableOpacity>
             ))}
             <View style={[styles.menuDivider, { backgroundColor: t.border }]} />
+            <TouchableOpacity style={styles.menuItem} onPress={handleChangePassword}>
+              <Text style={[styles.menuItemText, { color: t.text }]}>Alterar senha</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
               <Text style={[styles.menuItemText, { color: t.danger }]}>Sair</Text>
             </TouchableOpacity>

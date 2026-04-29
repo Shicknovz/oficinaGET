@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, Platform, type ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, Platform, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
@@ -12,7 +12,7 @@ interface Props {
   disabled?: boolean;
   loading?: boolean;
   fullWidth?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export default function Button({ title, onPress, variant = 'primary', size = 'default', icon, disabled, loading, fullWidth, style }: Props) {

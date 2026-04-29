@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/helpers';
 import { themes } from '../utils/theme';
 import Card from '../components/Card';
 import Screen from '../components/Screen';
+import ModalShell from '../components/ModalShell';
+import SectionHero from '../components/SectionHero';
 import type { Agendamento } from '../types';
 
 interface MetricCardProps {
@@ -74,6 +76,17 @@ function DashboardScreen() {
 
   return (
     <Screen>
+      <SectionHero
+        eyebrow="Painel da oficina"
+        title="Acompanhe a rotina da oficina, os serviços ativos e os resultados do dia em uma única visão."
+        subtitle="Monitore clientes, ordens, alertas e caixa com mais clareza para manter a operação da oficina no ritmo certo."
+        image="https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?auto=format&fit=crop&w=1600&q=80"
+        stats={[
+          { icon: 'people-outline', value: String(clientes.length), label: 'Clientes' },
+          { icon: 'calendar-outline', value: String(agendamentosHoje), label: 'Alertas ativos' },
+          { icon: 'cash-outline', value: formatCurrency(receita - despesas), label: 'Saldo líquido' },
+        ]}
+      />
       <View style={[styles.header, { borderColor: t.border }]}> 
         <View>
           <Text style={[styles.greeting, { color: t.textSecondary }]}>Bem-vindo ao</Text>
@@ -90,71 +103,59 @@ function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal de Notificações */}
-      <Modal
+      <ModalShell
         visible={notifVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setNotifVisible(false)}
+        title="Alertas de atendimento"
+        subtitle={agendamentosHoje > 0 ? `Existem ${agendamentosHoje} atendimento(s) aguardando atualização da oficina.` : 'Nenhum alerta de atendimento no momento.'}
+        onClose={() => setNotifVisible(false)}
+        scrollable={true}
       >
-        <View style={styles.notifOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setNotifVisible(false)} />
-          <View style={styles.notifContainer}>
-            <Text style={[styles.menuTitle, { color: t.text }]}>Notificações</Text>
-            {agendamentosHoje > 0 ? (
-              <>
-                <Text style={{ color: t.textSecondary, marginBottom: 14 }}>
-                  Você tem {agendamentosHoje} notificação(ões) aguardando ação.
-                </Text>
-                {notificacoes.map(agendamento => (
-                  <View key={agendamento.id} style={[styles.notificationCard, { borderColor: t.border, backgroundColor: t.bgCard }]}> 
-                    <View style={styles.notificationHeader}>
-                      <View style={[styles.notificationIcon, { backgroundColor: t.infoBg }]}>
-                        <Text style={styles.notificationIconText}>🔔</Text>
-                      </View>
-                      <View style={styles.notificationMeta}>
-                        <Text style={[styles.notificationTitle, { color: t.text }]}>Agendamento em aberto</Text>
-                        <Text style={[styles.notificationSubtitle, { color: t.textSecondary }]}>
-                          {getClienteNome(agendamento.clienteId)} • {getVeiculoNome(agendamento.veiculoId)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={[styles.notificationDescription, { color: t.text }]}>{agendamento.descricao}</Text>
-                    <Text style={[styles.notificationDate, { color: t.textMuted }]}>{agendamento.dataHora.replace('T', ' • ').slice(0, 16)}</Text>
-
-                    <View style={styles.notificationActions}>
-                      <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: t.successBg, borderColor: t.success }]}
-                        onPress={() => handleNotificationAction(agendamento, 'pronto')}
-                      >
-                        <Text style={[styles.actionButtonText, { color: t.success }]}>Pronto</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: t.infoBg, borderColor: t.primary }]}
-                        onPress={() => handleNotificationAction(agendamento, 'em_servico')}
-                      >
-                        <Text style={[styles.actionButtonText, { color: t.primary }]}>Em serviço</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: t.dangerBg, borderColor: t.danger }]}
-                        onPress={() => handleNotificationAction(agendamento, 'cancelado')}
-                      >
-                        <Text style={[styles.actionButtonText, { color: t.danger }]}>Cancelado</Text>
-                      </TouchableOpacity>
-                    </View>
+        {agendamentosHoje > 0 ? (
+          <>
+            {notificacoes.map(agendamento => (
+              <View key={agendamento.id} style={[styles.notificationCard, { borderColor: t.border, backgroundColor: t.bgCard }]}> 
+                <View style={styles.notificationHeader}>
+                  <View style={[styles.notificationIcon, { backgroundColor: t.infoBg }]}> 
+                    <Text style={styles.notificationIconText}>🔔</Text>
                   </View>
-                ))}
-              </>
-            ) : (
-              <Text style={{ color: t.textSecondary, marginBottom: 10 }}>Nenhuma notificação no momento.</Text>
-            )}
-            <TouchableOpacity style={styles.notifCloseBtn} onPress={() => setNotifVisible(false)}>
-              <Text style={{ color: t.primary, fontWeight: '700' }}>Fechar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+                  <View style={styles.notificationMeta}>
+                    <Text style={[styles.notificationTitle, { color: t.text }]}>Atendimento aguardando ação</Text>
+                    <Text style={[styles.notificationSubtitle, { color: t.textSecondary }]}> 
+                      {getClienteNome(agendamento.clienteId)} • {getVeiculoNome(agendamento.veiculoId)}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={[styles.notificationDescription, { color: t.text }]}>{agendamento.descricao}</Text>
+                <Text style={[styles.notificationDate, { color: t.textMuted }]}>{agendamento.dataHora.replace('T', ' • ').slice(0, 16)}</Text>
+
+                <View style={styles.notificationActions}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: t.successBg, borderColor: t.success }]}
+                    onPress={() => handleNotificationAction(agendamento, 'pronto')}
+                  >
+                    <Text style={[styles.actionButtonText, { color: t.success }]}>Pronto</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: t.infoBg, borderColor: t.primary }]}
+                    onPress={() => handleNotificationAction(agendamento, 'em_servico')}
+                  >
+                    <Text style={[styles.actionButtonText, { color: t.primary }]}>Em serviço</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: t.dangerBg, borderColor: t.danger }]}
+                    onPress={() => handleNotificationAction(agendamento, 'cancelado')}
+                  >
+                    <Text style={[styles.actionButtonText, { color: t.danger }]}>Cancelado</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </>
+        ) : (
+          <Text style={{ color: t.textSecondary, marginBottom: 10 }}>Nenhum alerta pendente no momento.</Text>
+        )}
+      </ModalShell>
 
       {/* Metric Grid */}
       <View style={styles.metricsGrid}>
@@ -229,10 +230,6 @@ export default DashboardScreen;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, marginBottom: 6 },
-  menuTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  notifOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', padding: 20 },
-  notifContainer: { backgroundColor: '#131C2E', borderRadius: 18, padding: 20, borderWidth: 1, borderColor: '#24324B' },
-  notifCloseBtn: { alignSelf: 'flex-end', marginTop: 8, paddingVertical: 6, paddingHorizontal: 10 },
   notificationCard: { borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 12 },
   notificationHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   notificationIcon: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 12 },

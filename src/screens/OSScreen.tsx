@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Modal, TouchableOpacity, FlatList, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, FlatList, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -8,6 +8,8 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Screen from '../components/Screen';
+import ModalShell from '../components/ModalShell';
+import SectionHero from '../components/SectionHero';
 import StatusBadge from '../components/StatusBadge';
 import { formatCurrency, formatDate } from '../utils/helpers';
 
@@ -44,6 +46,8 @@ export default function OSScreen() {
     if (filter === 'todos') return ordensServico;
     return ordensServico.filter(o => o.status === filter);
   }, [ordensServico, filter]);
+  const abertas = useMemo(() => ordensServico.filter(o => o.status === 'aberta').length, [ordensServico]);
+  const andamento = useMemo(() => ordensServico.filter(o => o.status === 'em_andamento').length, [ordensServico]);
 
   const openDetail = (os: any) => { setSelectedOS(os); setDetailOpen(true); };
   const changeStatus = (os: any, status: OSSStatus) => {
@@ -83,33 +87,45 @@ export default function OSScreen() {
 
   return (
     <Screen scroll={false} contentStyle={styles.screenContent}>
-      {/* Filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={[styles.filterBar, { borderBottomColor: t.border }]}
-        contentContainerStyle={styles.filterBarContent}
-      >
-        {FILTER_OPTIONS.map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.filterChip, { backgroundColor: filter === f.key ? t.primary : t.bgCard, borderColor: t.border }]}
-            onPress={() => setFilter(f.key)}
-          >
-            <Text style={{ color: filter === f.key ? '#FFF' : t.textSecondary, fontWeight: '600', fontSize: 13 }}>
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* OS List */}
       <FlatList
         style={styles.list}
         data={filtered}
         keyExtractor={o => o.id}
         contentContainerStyle={styles.listContent}
         extraData={ordensServico}
+        ListHeaderComponent={
+          <>
+            <SectionHero
+              eyebrow="Ordens de serviço"
+              title="Controle cada ordem de serviço da oficina com clareza, prazo e responsabilidade."
+              subtitle="Acompanhe diagnósticos, peças, execução e entrega em um fluxo pensado para a rotina da oficina."
+              image="https://images.unsplash.com/photo-1613214149922-f1809c99b414?auto=format&fit=crop&w=1600&q=80"
+              stats={[
+                { icon: 'document-text-outline', value: String(ordensServico.length), label: 'Ordens totais' },
+                { icon: 'clipboard-outline', value: String(abertas), label: 'Abertas' },
+                { icon: 'build-outline', value: String(andamento), label: 'Em andamento' },
+              ]}
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={[styles.filterBar, { borderBottomColor: t.border }]}
+              contentContainerStyle={styles.filterBarContent}
+            >
+              {FILTER_OPTIONS.map(f => (
+                <TouchableOpacity
+                  key={f.key}
+                  style={[styles.filterChip, { backgroundColor: filter === f.key ? t.primary : t.bgCard, borderColor: t.border }]}
+                  onPress={() => setFilter(f.key)}
+                >
+                  <Text style={{ color: filter === f.key ? '#FFF' : t.textSecondary, fontWeight: '600', fontSize: 13 }}>
+                    {f.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        }
         renderItem={({ item }) => {
           const cliente = getCliente(item.clienteId);
           const veiculo = getVeiculo(item.veiculoId);
@@ -138,123 +154,114 @@ export default function OSScreen() {
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 
-      {/* Detail Modal */}
-      <Modal visible={detailOpen} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-            {selectedOS && (
-              <>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <Text style={[styles.modalTitle, { color: t.text }]}>{selectedOS.id}</Text>
-                  <TouchableOpacity onPress={() => setDetailOpen(false)}>
-                    <Ionicons name="close" size={28} color={t.textSecondary} />
-                  </TouchableOpacity>
-                </View>
+      {selectedOS && (
+        <ModalShell
+          visible={detailOpen}
+          title={selectedOS.id}
+          subtitle="Consulte a ordem de serviço e acompanhe a evolução do reparo em um único painel."
+          onClose={() => setDetailOpen(false)}
+          scrollable={true}
+        >
+          <StatusBadge status={selectedOS.status} />
 
-                <StatusBadge status={selectedOS.status} />
+          <TouchableOpacity style={[styles.statusBtn, { backgroundColor: t.bg }]} onPress={() => setStatusModal(true)}>
+            <Text style={{ color: t.textSecondary, fontSize: 13 }}>Alterar Status</Text>
+            <Ionicons name="chevron-forward" size={18} color={t.textSecondary} />
+          </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.statusBtn, { backgroundColor: t.bg }]} onPress={() => setStatusModal(true)}>
-                  <Text style={{ color: t.textSecondary, fontSize: 13 }}>Alterar Status</Text>
-                  <Ionicons name="chevron-forward" size={18} color={t.textSecondary} />
-                </TouchableOpacity>
-
-                <View style={[styles.detailSection, { borderBottomColor: t.border }]}>
-                  <Text style={[styles.detailTitle, { color: t.text }]}>Veículo</Text>
-                  <Text style={{ color: t.textSecondary }}>
-                    {getVeiculo(selectedOS.veiculoId)?.marca} {getVeiculo(selectedOS.veiculoId)?.modelo} - {getVeiculo(selectedOS.veiculoId)?.placa}
-                  </Text>
-                  <Text style={{ color: t.textSecondary, marginTop: 4 }}>
-                    {getCliente(selectedOS.clienteId)?.nome}
-                  </Text>
-                </View>
-
-                <View style={[styles.detailSection, { borderBottomColor: t.border }]}>
-                  <Text style={[styles.detailTitle, { color: t.text }]}>Problema</Text>
-                  <Text style={{ color: t.textSecondary }}>{selectedOS.descricaoProblema}</Text>
-                </View>
-
-                <View style={[styles.detailSection, { borderBottomColor: t.border }]}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={[styles.detailTitle, { color: t.text }]}>Itens ({selectedOS.itens?.length || 0})</Text>
-                    <TouchableOpacity onPress={() => setItemForm({ descricao: '', quantidade: '1', valorUnitario: '', tipo: 'mao_de_obra' })}>
-                      <Text style={{ color: t.primary, fontWeight: '600', fontSize: 14 }}>+ Adicionar</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {selectedOS.itens?.map((item: any, i: number) => (
-                    <View key={i} style={styles.itemRow}>
-                      <View>
-                        <Text style={{ color: t.text, fontWeight: '500' }}>{item.descricao}</Text>
-                        <Text style={{ color: t.textMuted, fontSize: 12 }}>{item.quantidade}x {formatCurrency(item.valorUnitario)}</Text>
-                      </View>
-                      <Text style={{ color: t.success, fontWeight: '700' }}>{formatCurrency(item.quantidade * item.valorUnitario)}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                {itemForm.descricao && (
-                  <Card>
-                    <Text style={[styles.detailTitle, { color: t.text, marginBottom: 8 }]}>Novo Item</Text>
-                    <Input label="Descrição" value={itemForm.descricao} onChangeText={v => setItemForm(f => ({ ...f, descricao: v }))} />
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <Input label="Qtd" value={itemForm.quantidade} onChangeText={v => setItemForm(f => ({ ...f, quantidade: v }))} keyboardType="numeric" containerStyle={styles.inlineInput} />
-                      <Input label="Valor Unit." value={itemForm.valorUnitario} onChangeText={v => setItemForm(f => ({ ...f, valorUnitario: v }))} keyboardType="numeric" containerStyle={styles.inlineInput} />
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                      {['mao_de_obra', 'peca'].map(tp => (
-                        <TouchableOpacity key={tp} style={[styles.typeChip, { backgroundColor: itemForm.tipo === tp ? t.primary : t.bg, borderColor: t.border }]} onPress={() => setItemForm(f => ({ ...f, tipo: tp }))}>
-                          <Text style={{ color: itemForm.tipo === tp ? '#FFF' : t.textSecondary, fontSize: 12 }}>{tp === 'mao_de_obra' ? 'Mão de Obra' : 'Peça'}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    <Button title="Adicionar Item" variant="success" onPress={handleAddItem} fullWidth />
-                  </Card>
-                )}
-
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
-                  <Text style={{ color: t.textSecondary, fontSize: 16 }}>Total</Text>
-                  <Text style={[styles.totalValue, { color: t.success }]}>{formatCurrency(selectedOS.valorTotal)}</Text>
-                </View>
-              </>
-            )}
+          <View style={[styles.detailSection, { borderBottomColor: t.border }]}> 
+            <Text style={[styles.detailTitle, { color: t.text }]}>Veículo</Text>
+            <Text style={{ color: t.textSecondary }}>
+              {getVeiculo(selectedOS.veiculoId)?.marca} {getVeiculo(selectedOS.veiculoId)?.modelo} - {getVeiculo(selectedOS.veiculoId)?.placa}
+            </Text>
+            <Text style={{ color: t.textSecondary, marginTop: 4 }}>
+              {getCliente(selectedOS.clienteId)?.nome}
+            </Text>
           </View>
-        </View>
-      </Modal>
 
-      {/* Status Change Modal */}
-      <Modal visible={statusModal} transparent animationType="fade">
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: t.text, marginBottom: 16 }]}>Alterar Status</Text>
-            {STATUS_OPTIONS.map(opt => (
-              <TouchableOpacity key={opt.value} style={[styles.statusOption, { borderBottomColor: t.border }]} onPress={() => changeStatus(selectedOS, opt.value)}>
-                <Text style={{ color: t.text, fontSize: 16 }}>
-                  {opt.label}
-                </Text>
+          <View style={[styles.detailSection, { borderBottomColor: t.border }]}> 
+            <Text style={[styles.detailTitle, { color: t.text }]}>Problema</Text>
+            <Text style={{ color: t.textSecondary }}>{selectedOS.descricaoProblema}</Text>
+          </View>
+
+          <View style={[styles.detailSection, { borderBottomColor: t.border }]}> 
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={[styles.detailTitle, { color: t.text }]}>Itens ({selectedOS.itens?.length || 0})</Text>
+              <TouchableOpacity onPress={() => setItemForm({ descricao: '', quantidade: '1', valorUnitario: '', tipo: 'mao_de_obra' })}>
+                <Text style={{ color: t.primary, fontWeight: '600', fontSize: 14 }}>+ Adicionar</Text>
               </TouchableOpacity>
-            ))}
-            <Button title="Cancelar" variant="outline" onPress={() => setStatusModal(false)} fullWidth />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Add OS Modal */}
-      <Modal visible={modalOpen} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: t.text }]}>Nova Ordem de Serviço</Text>
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-              <Input label="Cliente" placeholder="Selecione um cliente" value={addForm.clienteId} onChangeText={v => setAddForm(f => ({ ...f, clienteId: v }))} />
-              <Input label="Veículo ID (manual)" placeholder="ID do veículo" value={addForm.veiculoId} onChangeText={v => setAddForm(f => ({ ...f, veiculoId: v }))} />
-              <Input label="Descrição do Problema" value={addForm.descricaoProblema} onChangeText={v => setAddForm(f => ({ ...f, descricaoProblema: v }))} multiline numberOfLines={3} />
-              <Input label="Mecânico" value={addForm.mecanicoResponsavel} onChangeText={v => setAddForm(f => ({ ...f, mecanicoResponsavel: v }))} />
-            </ScrollView>
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-              <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={{ flex: 1 }} />
-              <Button title="Criar OS" variant="success" onPress={handleAddOS} fullWidth style={{ flex: 1 }} />
             </View>
+            {selectedOS.itens?.map((item: any, i: number) => (
+              <View key={i} style={styles.itemRow}>
+                <View>
+                  <Text style={{ color: t.text, fontWeight: '500' }}>{item.descricao}</Text>
+                  <Text style={{ color: t.textMuted, fontSize: 12 }}>{item.quantidade}x {formatCurrency(item.valorUnitario)}</Text>
+                </View>
+                <Text style={{ color: t.success, fontWeight: '700' }}>{formatCurrency(item.quantidade * item.valorUnitario)}</Text>
+              </View>
+            ))}
           </View>
-        </View>
-      </Modal>
+
+          {itemForm.descricao && (
+            <Card>
+              <Text style={[styles.detailTitle, { color: t.text, marginBottom: 8 }]}>Novo Item</Text>
+              <Input label="Descrição" value={itemForm.descricao} onChangeText={v => setItemForm(f => ({ ...f, descricao: v }))} />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Input label="Qtd" value={itemForm.quantidade} onChangeText={v => setItemForm(f => ({ ...f, quantidade: v }))} keyboardType="numeric" containerStyle={styles.inlineInput} />
+                <Input label="Valor Unit." value={itemForm.valorUnitario} onChangeText={v => setItemForm(f => ({ ...f, valorUnitario: v }))} keyboardType="numeric" containerStyle={styles.inlineInput} />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                {['mao_de_obra', 'peca'].map(tp => (
+                  <TouchableOpacity key={tp} style={[styles.typeChip, { backgroundColor: itemForm.tipo === tp ? t.primary : t.bg, borderColor: t.border }]} onPress={() => setItemForm(f => ({ ...f, tipo: tp }))}>
+                    <Text style={{ color: itemForm.tipo === tp ? '#FFF' : t.textSecondary, fontSize: 12 }}>{tp === 'mao_de_obra' ? 'Mão de Obra' : 'Peça'}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Button title="Adicionar Item" variant="success" onPress={handleAddItem} fullWidth />
+            </Card>
+          )}
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+            <Text style={{ color: t.textSecondary, fontSize: 16 }}>Total</Text>
+            <Text style={[styles.totalValue, { color: t.success }]}>{formatCurrency(selectedOS.valorTotal)}</Text>
+          </View>
+        </ModalShell>
+      )}
+
+      <ModalShell
+        visible={statusModal}
+        title="Alterar status"
+        subtitle="Defina a próxima etapa do serviço para manter a oficina alinhada com o andamento do reparo."
+        onClose={() => setStatusModal(false)}
+        footer={<Button title="Cancelar" variant="outline" onPress={() => setStatusModal(false)} fullWidth />}
+      >
+        {STATUS_OPTIONS.map(opt => (
+          <TouchableOpacity key={opt.value} style={[styles.statusOption, { borderBottomColor: t.border }]} onPress={() => changeStatus(selectedOS, opt.value)}>
+            <Text style={{ color: t.text, fontSize: 16 }}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ModalShell>
+
+      <ModalShell
+        visible={modalOpen}
+        title="Nova ordem de serviço"
+        subtitle="Abra uma nova ordem com as informações essenciais para iniciar o atendimento da oficina."
+        onClose={() => setModalOpen(false)}
+        scrollable={true}
+        footer={
+          <View style={styles.modalActions}>
+            <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={styles.modalActionButton} />
+            <Button title="Criar OS" variant="success" onPress={handleAddOS} fullWidth style={styles.modalActionButton} />
+          </View>
+        }
+      >
+        <Input label="Cliente" placeholder="Selecione um cliente" value={addForm.clienteId} onChangeText={v => setAddForm(f => ({ ...f, clienteId: v }))} />
+        <Input label="Veículo ID (manual)" placeholder="ID do veículo" value={addForm.veiculoId} onChangeText={v => setAddForm(f => ({ ...f, veiculoId: v }))} />
+        <Input label="Descrição do Problema" value={addForm.descricaoProblema} onChangeText={v => setAddForm(f => ({ ...f, descricaoProblema: v }))} multiline numberOfLines={3} />
+        <Input label="Mecânico" value={addForm.mecanicoResponsavel} onChangeText={v => setAddForm(f => ({ ...f, mecanicoResponsavel: v }))} />
+      </ModalShell>
     </Screen>
   );
 }
@@ -286,9 +293,8 @@ const styles = StyleSheet.create({
   osDesc: { fontSize: 15, marginBottom: 4 },
   osValue: { fontSize: 16, fontWeight: '700' },
   empty: { textAlign: 'center', marginTop: 48, fontSize: 16 },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 20, padding: 20, maxHeight: '80%' },
-  modalTitle: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalActionButton: { flex: 1 },
   statusBtn: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, marginTop: 10, marginBottom: 14, alignItems: 'center' },
   detailSection: { paddingVertical: 12, borderBottomWidth: 1 },
   detailTitle: { fontSize: 15, fontWeight: '600', marginBottom: 4 },

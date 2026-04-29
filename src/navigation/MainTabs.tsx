@@ -15,6 +15,7 @@ import FinanceiroScreen from '../screens/FinanceiroScreen';
 
 interface MainTabsProps {
   onLogout: () => void;
+  onChangePassword: () => void;
 }
 
 const Tab = createBottomTabNavigator<any>();
@@ -39,11 +40,11 @@ const TABS = [
   { name: 'Financeiro', screen: FinanceiroScreen, icon: 'wallet', label: 'Financeiro' },
 ];
 
-export default function MainTabs({ onLogout }: MainTabsProps) {
+export default function MainTabs({ onLogout, onChangePassword }: MainTabsProps) {
   const t = useTheme();
 
   return (
-    <AppMenuProvider onLogout={onLogout}>
+    <AppMenuProvider onLogout={onLogout} onChangePassword={onChangePassword}>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,

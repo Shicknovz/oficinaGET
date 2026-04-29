@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -8,6 +8,9 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Screen from '../components/Screen';
+import ActionSearchBar from '../components/ActionSearchBar';
+import ModalShell from '../components/ModalShell';
+import SectionHero from '../components/SectionHero';
 
 export default function ClientesScreen() {
   const t = useTheme();
@@ -27,24 +30,31 @@ export default function ClientesScreen() {
   const save = () => { if (!form.nome) return; if (editing) { updateCliente({ ...editing, ...form }); } else { addCliente(form); } setModalOpen(false); };
 
   const getVeiculoCount = (clienteId: string) => veiculos.filter(v => v.clienteId === clienteId).length;
+  const totalVeiculos = useMemo(() => veiculos.length, [veiculos]);
 
   return (
     <Screen scroll={false} contentStyle={styles.screenContent}>
-      {/* Search + Add */}
-      <View style={[styles.topBar, { backgroundColor: t.bgCard, borderColor: t.border }]}>
-        <Input
-          placeholder="Buscar cliente..."
-          value={search}
-          onChangeText={setSearch}
-          style={styles.searchInput}
-        />
-      </View>
-
       <FlatList
         style={styles.list}
         data={filtered}
         keyExtractor={c => c.id}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            <SectionHero
+              eyebrow="Relacionamento"
+              title="Organize a base de clientes da oficina e fortaleça a confiança em cada atendimento."
+              subtitle="Localize contatos, acompanhe veículos vinculados e mantenha o relacionamento da oficina sempre bem estruturado."
+              image="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1600&q=80"
+              stats={[
+                { icon: 'people-outline', value: String(clientes.length), label: 'Clientes' },
+                { icon: 'search-outline', value: String(filtered.length), label: 'Resultados' },
+                { icon: 'car-sport-outline', value: String(totalVeiculos), label: 'Veículos vinculados' },
+              ]}
+            />
+            <ActionSearchBar placeholder="Buscar cliente por nome ou CPF..." value={search} onChangeText={setSearch} onActionPress={openAdd} />
+          </>
+        }
         renderItem={({ item }) => (
           <Card onPress={() => openEdit(item)}>
             <View style={styles.row}>
@@ -71,25 +81,25 @@ export default function ClientesScreen() {
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 
-      {/* Modal Add/Edit */}
-      <Modal visible={modalOpen} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: t.text }]}>{editing ? 'Editar Cliente' : 'Novo Cliente'}</Text>
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-              <Input label="Nome" value={form.nome} onChangeText={v => setForm(f => ({ ...f, nome: v }))} />
-              <Input label="CPF" value={form.cpf} onChangeText={v => setForm(f => ({ ...f, cpf: v }))} keyboardType="numeric" />
-              <Input label="Telefone" value={form.telefone} onChangeText={v => setForm(f => ({ ...f, telefone: v }))} keyboardType="phone-pad" />
-              <Input label="Email" value={form.email} onChangeText={v => setForm(f => ({ ...f, email: v }))} keyboardType="email-address" />
-              <Input label="Endereço" value={form.endereco} onChangeText={v => setForm(f => ({ ...f, endereco: v }))} />
-            </ScrollView>
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-              <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={{ flex: 1 }} />
-              <Button title={editing ? 'Salvar' : 'Adicionar'} variant="success" onPress={save} fullWidth style={{ flex: 1 }} />
-            </View>
+      <ModalShell
+        visible={modalOpen}
+        title={editing ? 'Atualizar cliente' : 'Cadastrar cliente'}
+        subtitle="Mantenha os dados do cliente organizados para agilizar o atendimento da oficina."
+        onClose={() => setModalOpen(false)}
+        scrollable={true}
+        footer={
+          <View style={styles.modalActions}>
+            <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={styles.modalActionButton} />
+            <Button title={editing ? 'Salvar' : 'Adicionar'} variant="success" onPress={save} fullWidth style={styles.modalActionButton} />
           </View>
-        </View>
-      </Modal>
+        }
+      >
+        <Input label="Nome" value={form.nome} onChangeText={v => setForm(f => ({ ...f, nome: v }))} />
+        <Input label="CPF" value={form.cpf} onChangeText={v => setForm(f => ({ ...f, cpf: v }))} keyboardType="numeric" />
+        <Input label="Telefone" value={form.telefone} onChangeText={v => setForm(f => ({ ...f, telefone: v }))} keyboardType="phone-pad" />
+        <Input label="Email" value={form.email} onChangeText={v => setForm(f => ({ ...f, email: v }))} keyboardType="email-address" />
+        <Input label="Endereço" value={form.endereco} onChangeText={v => setForm(f => ({ ...f, endereco: v }))} />
+      </ModalShell>
     </Screen>
   );
 }
@@ -97,8 +107,6 @@ export default function ClientesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   screenContent: { flex: 1, minHeight: 0 },
-  topBar: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
-  searchInput: { flex: 1 },
   list: { flex: 1 },
   listContent: { padding: 16, paddingBottom: 136 },
   fab: {
@@ -120,7 +128,6 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 22, fontWeight: '700' },
   name: { fontSize: 16, fontWeight: '600' },
   empty: { textAlign: 'center', marginTop: 48, fontSize: 16 },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 20, padding: 20, maxHeight: '80%' },
-  modalTitle: { fontSize: 22, fontWeight: '700', marginBottom: 16 },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalActionButton: { flex: 1 },
 });

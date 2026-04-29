@@ -8,6 +8,8 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Screen from '../components/Screen';
+import ModalShell from '../components/ModalShell';
+import SectionHero from '../components/SectionHero';
 import StatusBadge from '../components/StatusBadge';
 import { formatDateTime } from '../utils/helpers';
 
@@ -29,6 +31,8 @@ export default function AgendamentoScreen() {
     [...agendamentos].sort((a, b) => a.dataHora.localeCompare(b.dataHora)),
     [agendamentos]
   );
+  const confirmados = useMemo(() => agendamentos.filter(a => a.status === 'confirmado').length, [agendamentos]);
+  const pendentes = useMemo(() => agendamentos.filter(a => a.status === 'pendente').length, [agendamentos]);
 
   const openDetail = (a: any) => { setSelected(a); setDetailOpen(true); };
 
@@ -55,7 +59,20 @@ export default function AgendamentoScreen() {
       <FlatList
         data={sorted}
         keyExtractor={a => a.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <SectionHero
+            eyebrow="Agenda da oficina"
+            title="Organize atendimentos com clareza e mantenha a rotina da oficina sob controle."
+            subtitle="Visualize compromissos, acompanhe confirmações e entregue uma experiência mais profissional desde o agendamento."
+            image="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1600&q=80"
+            stats={[
+              { icon: 'calendar-outline', value: String(sorted.length), label: 'Agendamentos' },
+              { icon: 'time-outline', value: String(pendentes), label: 'Pendentes' },
+              { icon: 'checkmark-done-outline', value: String(confirmados), label: 'Confirmados' },
+            ]}
+          />
+        }
         renderItem={({ item }) => (
           <Card onPress={() => openDetail(item)}>
             <View style={styles.agHeader}>
@@ -73,66 +90,64 @@ export default function AgendamentoScreen() {
         <Ionicons name="calendar" size={26} color="#FFF" />
       </TouchableOpacity>
 
-      {/* Detail Modal */}
-      <Modal visible={detailOpen} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          {selected && (
-            <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={[styles.modalTitle, { color: t.text }]}>Agendamento</Text>
-                <TouchableOpacity onPress={() => setDetailOpen(false)}><Ionicons name="close" size={28} color={t.textSecondary} /></TouchableOpacity>
-              </View>
-
-              <StatusBadge status={selected.status} />
-
-              <View style={styles.detailSection}>
-                <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Descrição</Text>
-                <Text style={[styles.detailValue, { color: t.text }]}>{selected.descricao}</Text>
-              </View>
-              <View style={styles.detailSection}>
-                <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Data e Hora</Text>
-                <Text style={[styles.detailValue, { color: t.text }]}>{formatDateTime(selected.dataHora)}</Text>
-              </View>
-              <View style={styles.detailSection}>
-                <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Cliente</Text>
-                <Text style={[styles.detailValue, { color: t.text }]}>{getCliente(selected.clienteId)}</Text>
-              </View>
-              <View style={[styles.detailSection, { borderBottomWidth: 0 }]}>
-                <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Veículo</Text>
-                <Text style={[styles.detailValue, { color: t.text }]}>{getVeiculo(selected.clienteId)}</Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-                <Button title={selected.status === 'confirmado' ? 'Desconfirmar' : 'Confirmar'} variant={selected.status === 'confirmado' ? 'outline' : 'success'} fullWidth onPress={() => toggleConfirm(selected)} />
-                <Button title="Excluir" variant="danger" fullWidth onPress={() => { deleteAgendamento(selected.id); setDetailOpen(false); }} />
-              </View>
+      {selected && (
+        <ModalShell
+          visible={detailOpen}
+          title="Detalhes do agendamento"
+          subtitle="Consulte informações do compromisso e atualize o status com rapidez."
+          onClose={() => setDetailOpen(false)}
+          footer={
+            <View style={styles.modalActions}>
+              <Button title={selected.status === 'confirmado' ? 'Desconfirmar' : 'Confirmar'} variant={selected.status === 'confirmado' ? 'outline' : 'success'} fullWidth onPress={() => toggleConfirm(selected)} style={styles.modalActionButton} />
+              <Button title="Excluir" variant="danger" fullWidth onPress={() => { deleteAgendamento(selected.id); setDetailOpen(false); }} style={styles.modalActionButton} />
             </View>
-          )}
-        </View>
-      </Modal>
+          }
+        >
+          <StatusBadge status={selected.status} />
 
-      {/* Add Modal */}
-      <Modal visible={modalOpen} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: t.text }]}>Novo Agendamento</Text>
-            <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} placeholder="Ex: Troca de óleo" />
-            <Input label="Data" value={form.data} onChangeText={v => setForm(f => ({ ...f, data: v }))} placeholder="AAAA-MM-DD" />
-            <Input label="Hora" value={form.hora} onChangeText={v => setForm(f => ({ ...f, hora: v }))} placeholder="HH:MM" />
-            <Input label="Cliente (ID ou nome)" value={form.clienteId} onChangeText={v => setForm(f => ({ ...f, clienteId: v }))} />
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-              <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={{ flex: 1 }} />
-              <Button title="Agendar" variant="success" onPress={handleAdd} fullWidth style={{ flex: 1 }} />
-            </View>
+          <View style={styles.detailSection}>
+            <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Descrição</Text>
+            <Text style={[styles.detailValue, { color: t.text }]}>{selected.descricao}</Text>
           </View>
-        </View>
-      </Modal>
+          <View style={styles.detailSection}>
+            <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Data e Hora</Text>
+            <Text style={[styles.detailValue, { color: t.text }]}>{formatDateTime(selected.dataHora)}</Text>
+          </View>
+          <View style={styles.detailSection}>
+            <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Cliente</Text>
+            <Text style={[styles.detailValue, { color: t.text }]}>{getCliente(selected.clienteId)}</Text>
+          </View>
+          <View style={[styles.detailSection, { borderBottomWidth: 0 }]}>
+            <Text style={[styles.detailLabel, { color: t.textSecondary }]}>Veículo</Text>
+            <Text style={[styles.detailValue, { color: t.text }]}>{getVeiculo(selected.clienteId)}</Text>
+          </View>
+        </ModalShell>
+      )}
+
+      <ModalShell
+        visible={modalOpen}
+        title="Novo agendamento"
+        subtitle="Cadastre um compromisso e mantenha a agenda da oficina organizada."
+        onClose={() => setModalOpen(false)}
+        footer={
+          <View style={styles.modalActions}>
+            <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={styles.modalActionButton} />
+            <Button title="Agendar" variant="success" onPress={handleAdd} fullWidth style={styles.modalActionButton} />
+          </View>
+        }
+      >
+        <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} placeholder="Ex: Troca de óleo" />
+        <Input label="Data" value={form.data} onChangeText={v => setForm(f => ({ ...f, data: v }))} placeholder="AAAA-MM-DD" />
+        <Input label="Hora" value={form.hora} onChangeText={v => setForm(f => ({ ...f, hora: v }))} placeholder="HH:MM" />
+        <Input label="Cliente (ID ou nome)" value={form.clienteId} onChangeText={v => setForm(f => ({ ...f, clienteId: v }))} />
+      </ModalShell>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  listContent: { padding: 16, paddingBottom: 136 },
   agHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   agDesc: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
   empty: { textAlign: 'center', marginTop: 48, fontSize: 16 },
@@ -149,9 +164,8 @@ const styles = StyleSheet.create({
       ? { boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.3)' }
       : { elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 }),
   },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 20, padding: 20, maxHeight: '70%' },
-  modalTitle: { fontSize: 20, fontWeight: '700' },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalActionButton: { flex: 1 },
   detailSection: { paddingVertical: 12, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   detailLabel: { fontSize: 12, fontWeight: '600', marginBottom: 4 },
   detailValue: { fontSize: 15 },

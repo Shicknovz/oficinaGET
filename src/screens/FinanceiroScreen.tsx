@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -7,6 +7,8 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Screen from '../components/Screen';
+import ModalShell from '../components/ModalShell';
+import SectionHero from '../components/SectionHero';
 import StatusBadge from '../components/StatusBadge';
 import { formatCurrency, formatDate } from '../utils/helpers';
 
@@ -28,6 +30,7 @@ export default function FinanceiroScreen() {
   const receitas = transacoes.filter(tr => tr.tipo === 'receita' && tr.status === 'pago').reduce((s, tr) => s + tr.valor, 0);
   const despesas = transacoes.filter(tr => tr.tipo === 'despesa' && tr.status === 'pago').reduce((s, tr) => s + tr.valor, 0);
   const saldo = receitas - despesas;
+  const pendentes = useMemo(() => transacoes.filter(tr => tr.status === 'pendente').length, [transacoes]);
 
   const handleAdd = () => {
     if (!form.descricao || !form.valor) return;
@@ -38,61 +41,71 @@ export default function FinanceiroScreen() {
 
   return (
     <Screen scroll={false} contentStyle={styles.screenContent}>
-      {/* Summary Cards */}
-      <View style={styles.summaryCards}>
-        <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
-          <View style={[styles.sumIcon, { backgroundColor: t.successBg }]}>
-            <Text style={{ fontSize: 20 }}>📈</Text>
-          </View>
-          <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Receitas</Text>
-          <Text style={{ color: t.success, fontSize: 18, fontWeight: '800' }}>{formatCurrency(receitas)}</Text>
-        </View>
-        <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
-          <View style={[styles.sumIcon, { backgroundColor: t.dangerBg }]}>
-            <Text style={{ fontSize: 20 }}>📉</Text>
-          </View>
-          <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Despesas</Text>
-          <Text style={{ color: t.danger, fontSize: 18, fontWeight: '800' }}>{formatCurrency(despesas)}</Text>
-        </View>
-        <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
-          <View style={[styles.sumIcon, { backgroundColor: t.infoBg }]}>
-            <Text style={{ fontSize: 20 }}>💰</Text>
-          </View>
-          <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Saldo</Text>
-          <Text style={{ color: saldo >= 0 ? t.success : t.danger, fontSize: 18, fontWeight: '800' }}>{formatCurrency(saldo)}</Text>
-        </View>
-      </View>
-
-      {/* Filter Chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={styles.filterBarContent}
-      >
-        {[
-          { key: 'todas', label: 'Todas', icon: 'list' },
-          { key: 'receita', label: 'Receitas', icon: 'trending-up' },
-          { key: 'despesa', label: 'Despesas', icon: 'trending-down' },
-          { key: 'pendente', label: 'Pendentes', icon: 'time' },
-        ].map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.filterChip, { backgroundColor: filter === f.key ? t.primary : t.bgCard, borderColor: t.border }]}
-            onPress={() => setFilter(f.key as FilterType)}
-          >
-            <Ionicons name={f.icon as any} size={14} color={filter === f.key ? '#FFF' : t.textSecondary} style={{ marginRight: 4 }} />
-            <Text style={{ color: filter === f.key ? '#FFF' : t.textSecondary, fontWeight: '600', fontSize: 13 }}>{f.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Transactions List */}
       <FlatList
         style={styles.list}
         data={filtered}
         keyExtractor={tr => tr.id}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            <SectionHero
+              eyebrow="Saúde financeira"
+              title="Acompanhe o caixa da oficina com clareza sobre entradas, saídas e valores pendentes."
+              subtitle="Analise os lançamentos financeiros e tome decisões com mais segurança para a operação da oficina."
+              image="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1600&q=80"
+              stats={[
+                { icon: 'trending-up-outline', value: formatCurrency(receitas), label: 'Receitas' },
+                { icon: 'trending-down-outline', value: formatCurrency(despesas), label: 'Despesas' },
+                { icon: 'time-outline', value: String(pendentes), label: 'Pendentes' },
+              ]}
+            />
+            <View style={styles.summaryCards}>
+              <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+                <View style={[styles.sumIcon, { backgroundColor: t.successBg }]}> 
+                  <Text style={{ fontSize: 20 }}>📈</Text>
+                </View>
+                <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Receitas</Text>
+                <Text style={{ color: t.success, fontSize: 18, fontWeight: '800' }}>{formatCurrency(receitas)}</Text>
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+                <View style={[styles.sumIcon, { backgroundColor: t.dangerBg }]}> 
+                  <Text style={{ fontSize: 20 }}>📉</Text>
+                </View>
+                <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Despesas</Text>
+                <Text style={{ color: t.danger, fontSize: 18, fontWeight: '800' }}>{formatCurrency(despesas)}</Text>
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+                <View style={[styles.sumIcon, { backgroundColor: t.infoBg }]}> 
+                  <Text style={{ fontSize: 20 }}>💰</Text>
+                </View>
+                <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Saldo</Text>
+                <Text style={{ color: saldo >= 0 ? t.success : t.danger, fontSize: 18, fontWeight: '800' }}>{formatCurrency(saldo)}</Text>
+              </View>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterBar}
+              contentContainerStyle={styles.filterBarContent}
+            >
+              {[
+                { key: 'todas', label: 'Todas', icon: 'list' },
+                { key: 'receita', label: 'Receitas', icon: 'trending-up' },
+                { key: 'despesa', label: 'Despesas', icon: 'trending-down' },
+                { key: 'pendente', label: 'Pendentes', icon: 'time' },
+              ].map(f => (
+                <TouchableOpacity
+                  key={f.key}
+                  style={[styles.filterChip, { backgroundColor: filter === f.key ? t.primary : t.bgCard, borderColor: t.border }]}
+                  onPress={() => setFilter(f.key as FilterType)}
+                >
+                  <Ionicons name={f.icon as any} size={14} color={filter === f.key ? '#FFF' : t.textSecondary} style={{ marginRight: 4 }} />
+                  <Text style={{ color: filter === f.key ? '#FFF' : t.textSecondary, fontWeight: '600', fontSize: 13 }}>{f.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        }
         renderItem={({ item }) => (
           <Card>
             <View style={styles.txRow}>
@@ -114,7 +127,7 @@ export default function FinanceiroScreen() {
             </View>
           </Card>
         )}
-        ListEmptyComponent={<Text style={[styles.empty, { color: t.textMuted }]}>Nenhuma transação encontrada</Text>}
+        ListEmptyComponent={<Text style={[styles.empty, { color: t.textMuted }]}>Nenhum lançamento financeiro encontrado</Text>}
       />
 
       {/* FAB */}
@@ -122,36 +135,37 @@ export default function FinanceiroScreen() {
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 
-      {/* Add Modal */}
-      <Modal visible={modalOpen} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: t.text }]}>Nova Transação</Text>
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
-              <TouchableOpacity style={[styles.typeChip, { backgroundColor: form.tipo === 'receita' ? t.success : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, tipo: 'receita' }))}>
-                <Text style={{ color: form.tipo === 'receita' ? '#FFF' : t.textSecondary }}>📈 Receita</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.typeChip, { backgroundColor: form.tipo === 'despesa' ? t.danger : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, tipo: 'despesa' }))}>
-                <Text style={{ color: form.tipo === 'despesa' ? '#FFF' : t.textSecondary }}>📉 Despesa</Text>
-              </TouchableOpacity>
-            </View>
-            <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} />
-            <Input label="Valor" value={form.valor} onChangeText={v => setForm(f => ({ ...f, valor: v }))} keyboardType="numeric" />
-            <Text style={{ color: t.textSecondary, fontSize: 13, marginBottom: 6, fontWeight: '600' }}>Método</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              {['pix', 'dinheiro', 'cartao', 'boleto'].map(m => (
-                <TouchableOpacity key={m} style={[styles.methodChip, { backgroundColor: form.metodo === m ? t.primary : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, metodo: m }))}>
-                  <Text style={{ color: form.metodo === m ? '#FFF' : t.textSecondary, fontSize: 11, textTransform: 'capitalize' }}>{m}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={{ flex: 1 }} />
-              <Button title="Adicionar" variant="success" onPress={handleAdd} fullWidth style={{ flex: 1 }} />
-            </View>
+      <ModalShell
+        visible={modalOpen}
+        title="Novo lançamento financeiro"
+        subtitle="Registre entradas e saídas da oficina para manter o controle financeiro sempre atualizado."
+        onClose={() => setModalOpen(false)}
+        footer={
+          <View style={styles.modalActions}>
+            <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={styles.modalActionButton} />
+            <Button title="Adicionar" variant="success" onPress={handleAdd} fullWidth style={styles.modalActionButton} />
           </View>
+        }
+      >
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
+          <TouchableOpacity style={[styles.typeChip, { backgroundColor: form.tipo === 'receita' ? t.success : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, tipo: 'receita' }))}>
+            <Text style={{ color: form.tipo === 'receita' ? '#FFF' : t.textSecondary }}>📈 Receita</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.typeChip, { backgroundColor: form.tipo === 'despesa' ? t.danger : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, tipo: 'despesa' }))}>
+            <Text style={{ color: form.tipo === 'despesa' ? '#FFF' : t.textSecondary }}>📉 Despesa</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+        <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} />
+        <Input label="Valor" value={form.valor} onChangeText={v => setForm(f => ({ ...f, valor: v }))} keyboardType="numeric" />
+        <Text style={{ color: t.textSecondary, fontSize: 13, marginBottom: 6, fontWeight: '600' }}>Método</Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+          {['pix', 'dinheiro', 'cartao', 'boleto'].map(m => (
+            <TouchableOpacity key={m} style={[styles.methodChip, { backgroundColor: form.metodo === m ? t.primary : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, metodo: m }))}>
+              <Text style={{ color: form.metodo === m ? '#FFF' : t.textSecondary, fontSize: 11, textTransform: 'capitalize' }}>{m}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ModalShell>
     </Screen>
   );
 }
@@ -188,7 +202,6 @@ const styles = StyleSheet.create({
       ? { boxShadow: '0px 18px 28px rgba(6, 13, 28, 0.32)' }
       : { elevation: 10, shadowColor: '#000', shadowOpacity: 0.32, shadowRadius: 12 }),
   },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 20, padding: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '700', marginBottom: 16 },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalActionButton: { flex: 1 },
 });

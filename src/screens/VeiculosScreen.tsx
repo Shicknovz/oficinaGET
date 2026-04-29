@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -8,6 +8,9 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Screen from '../components/Screen';
+import ActionSearchBar from '../components/ActionSearchBar';
+import ModalShell from '../components/ModalShell';
+import SectionHero from '../components/SectionHero';
 
 export default function VeiculosScreen() {
   const t = useTheme();
@@ -27,6 +30,7 @@ export default function VeiculosScreen() {
   );
 
   const getClienteNome = (id: string) => clientes.find(c => c.id === id)?.nome || 'N/A';
+  const associados = useMemo(() => veiculos.filter(v => !!v.clienteId).length, [veiculos]);
 
   const openAdd = () => {
     setEditing(null);
@@ -50,17 +54,26 @@ export default function VeiculosScreen() {
 
   return (
     <Screen scroll={false}>
-      <View style={[styles.topBar, { backgroundColor: t.bgCard, borderColor: t.border }]}>
-        <Input placeholder="Buscar veículo..." value={search} onChangeText={setSearch} style={styles.searchInput} />
-        <TouchableOpacity style={[styles.addBtn, { backgroundColor: t.primary }]} onPress={openAdd}>
-          <Ionicons name="add" size={24} color="#FFF" />
-        </TouchableOpacity>
-      </View>
-
       <FlatList
         data={filtered}
         keyExtractor={v => v.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            <SectionHero
+              eyebrow="Frota e histórico"
+              title="Gerencie os veículos com mais contexto e agilize o atendimento da oficina."
+              subtitle="Encontre veículos rapidamente, acompanhe vínculos com clientes e mantenha a operação mais organizada."
+              image="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80"
+              stats={[
+                { icon: 'car-outline', value: String(veiculos.length), label: 'Veículos' },
+                { icon: 'person-outline', value: String(associados), label: 'Associados a clientes' },
+                { icon: 'search-outline', value: String(filtered.length), label: 'Encontrados' },
+              ]}
+            />
+            <ActionSearchBar placeholder="Buscar veículo..." value={search} onChangeText={setSearch} onActionPress={openAdd} />
+          </>
+        }
         renderItem={({ item }) => (
           <Card onPress={() => openEdit(item)}>
             <View style={styles.row}>
@@ -85,40 +98,38 @@ export default function VeiculosScreen() {
         ListEmptyComponent={<Text style={[styles.empty, { color: t.textMuted }]}>Nenhum veículo encontrado</Text>}
       />
 
-      <Modal visible={modalOpen} animationType="slide" transparent>
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: t.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: t.text }]}>{editing ? 'Editar Veículo' : 'Novo Veículo'}</Text>
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-              <Input label="Cliente" value={getClienteNome(form.clienteId)} editable={false} />
-              <Input label="Marca" value={form.marca} onChangeText={v => setForm(f => ({ ...f, marca: v }))} />
-              <Input label="Modelo" value={form.modelo} onChangeText={v => setForm(f => ({ ...f, modelo: v }))} />
-              <Input label="Ano" value={form.ano} onChangeText={v => setForm(f => ({ ...f, ano: v }))} keyboardType="numeric" />
-              <Input label="Placa" value={form.placa} onChangeText={v => setForm(f => ({ ...f, placa: v.toUpperCase() }))} />
-              <Input label="Cor" value={form.cor} onChangeText={v => setForm(f => ({ ...f, cor: v }))} />
-              <Input label="Quilometragem" value={form.quilometragem} onChangeText={v => setForm(f => ({ ...f, quilometragem: v }))} keyboardType="numeric" />
-            </ScrollView>
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-              <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={{ flex: 1 }} />
-              <Button title={editing ? 'Salvar' : 'Adicionar'} variant="success" onPress={save} fullWidth style={{ flex: 1 }} />
-            </View>
+      <ModalShell
+        visible={modalOpen}
+        title={editing ? 'Editar veículo' : 'Novo veículo'}
+        subtitle="Cadastre os dados do veículo para agilizar diagnósticos e histórico de atendimento."
+        onClose={() => setModalOpen(false)}
+        scrollable={true}
+        footer={
+          <View style={styles.modalActions}>
+            <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={styles.modalActionButton} />
+            <Button title={editing ? 'Salvar' : 'Adicionar'} variant="success" onPress={save} fullWidth style={styles.modalActionButton} />
           </View>
-        </View>
-      </Modal>
+        }
+      >
+        <Input label="Cliente" value={getClienteNome(form.clienteId)} editable={false} />
+        <Input label="Marca" value={form.marca} onChangeText={v => setForm(f => ({ ...f, marca: v }))} />
+        <Input label="Modelo" value={form.modelo} onChangeText={v => setForm(f => ({ ...f, modelo: v }))} />
+        <Input label="Ano" value={form.ano} onChangeText={v => setForm(f => ({ ...f, ano: v }))} keyboardType="numeric" />
+        <Input label="Placa" value={form.placa} onChangeText={v => setForm(f => ({ ...f, placa: v.toUpperCase() }))} />
+        <Input label="Cor" value={form.cor} onChangeText={v => setForm(f => ({ ...f, cor: v }))} />
+        <Input label="Quilometragem" value={form.quilometragem} onChangeText={v => setForm(f => ({ ...f, quilometragem: v }))} keyboardType="numeric" />
+      </ModalShell>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
-  searchInput: { flex: 1, marginRight: 10 },
-  addBtn: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  listContent: { padding: 16, paddingBottom: 136 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 16, fontWeight: '600' },
   empty: { textAlign: 'center', marginTop: 48, fontSize: 16 },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 20, padding: 20, maxHeight: '80%' },
-  modalTitle: { fontSize: 22, fontWeight: '700', marginBottom: 16 },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalActionButton: { flex: 1 },
 });
