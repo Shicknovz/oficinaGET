@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import type {
   Cliente,
   Veiculo,
@@ -8,6 +8,7 @@ import type {
   TransacaoFinanceira,
   ItemOS,
 } from '../types';
+import { readStorage, writeStorage } from '../utils/storage';
 
 // ============================================================
 // DADOS MOCK - simula um backend local
@@ -144,6 +145,17 @@ interface State {
   transacoes: TransacaoFinanceira[];
 }
 
+const APP_DATA_STATE_KEY = 'autoget:data-state';
+
+const DEFAULT_STATE: State = {
+  clientes: MOCK_CLIENTES,
+  veiculos: MOCK_VEICULOS,
+  ordensServico: MOCK_OS,
+  agendamentos: MOCK_AGENDAMENTOS,
+  pecas: MOCK_PECAS,
+  transacoes: MOCK_TRANSACOES,
+};
+
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'ADD_CLIENTE':
@@ -182,14 +194,11 @@ function reducer(state: State, action: Action): State {
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(reducer, {
-    clientes: MOCK_CLIENTES,
-    veiculos: MOCK_VEICULOS,
-    ordensServico: MOCK_OS,
-    agendamentos: MOCK_AGENDAMENTOS,
-    pecas: MOCK_PECAS,
-    transacoes: MOCK_TRANSACOES,
-  });
+  const [state, dispatch] = useReducer(reducer, undefined, () => readStorage(APP_DATA_STATE_KEY, DEFAULT_STATE));
+
+  useEffect(() => {
+    writeStorage(APP_DATA_STATE_KEY, state);
+  }, [state]);
 
   const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 

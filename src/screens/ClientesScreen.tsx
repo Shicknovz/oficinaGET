@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -29,7 +29,7 @@ export default function ClientesScreen() {
   const getVeiculoCount = (clienteId: string) => veiculos.filter(v => v.clienteId === clienteId).length;
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} contentStyle={styles.screenContent}>
       {/* Search + Add */}
       <View style={[styles.topBar, { backgroundColor: t.bgCard, borderColor: t.border }]}>
         <Input
@@ -38,15 +38,13 @@ export default function ClientesScreen() {
           onChangeText={setSearch}
           style={styles.searchInput}
         />
-        <TouchableOpacity style={[styles.addBtn, { backgroundColor: t.primary }]} onPress={openAdd}>
-          <Ionicons name="add" size={24} color="#FFF" />
-        </TouchableOpacity>
       </View>
 
       <FlatList
+        style={styles.list}
         data={filtered}
         keyExtractor={c => c.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <Card onPress={() => openEdit(item)}>
             <View style={styles.row}>
@@ -68,6 +66,10 @@ export default function ClientesScreen() {
         )}
         ListEmptyComponent={<Text style={[styles.empty, { color: t.textMuted }]}>Nenhum cliente encontrado</Text>}
       />
+
+      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary }]} onPress={openAdd}>
+        <Ionicons name="add" size={28} color="#FFF" />
+      </TouchableOpacity>
 
       {/* Modal Add/Edit */}
       <Modal visible={modalOpen} animationType="slide" transparent>
@@ -94,9 +96,25 @@ export default function ClientesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  screenContent: { flex: 1, minHeight: 0 },
   topBar: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
-  searchInput: { flex: 1, marginRight: 10 },
-  addBtn: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  searchInput: { flex: 1 },
+  list: { flex: 1 },
+  listContent: { padding: 16, paddingBottom: 136 },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 82,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 18px 28px rgba(6, 13, 28, 0.32)' }
+      : { elevation: 10, shadowColor: '#000', shadowOpacity: 0.32, shadowRadius: 12 }),
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 22, fontWeight: '700' },

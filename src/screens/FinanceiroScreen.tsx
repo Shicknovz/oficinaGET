@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -37,7 +37,7 @@ export default function FinanceiroScreen() {
   };
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} contentStyle={styles.screenContent}>
       {/* Summary Cards */}
       <View style={styles.summaryCards}>
         <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
@@ -64,7 +64,12 @@ export default function FinanceiroScreen() {
       </View>
 
       {/* Filter Chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterBar}
+        contentContainerStyle={styles.filterBarContent}
+      >
         {[
           { key: 'todas', label: 'Todas', icon: 'list' },
           { key: 'receita', label: 'Receitas', icon: 'trending-up' },
@@ -84,9 +89,10 @@ export default function FinanceiroScreen() {
 
       {/* Transactions List */}
       <FlatList
+        style={styles.list}
         data={filtered}
         keyExtractor={tr => tr.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <Card>
             <View style={styles.txRow}>
@@ -152,11 +158,15 @@ export default function FinanceiroScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  screenContent: { flex: 1, minHeight: 0 },
   summaryCards: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 16, gap: 10 },
   summaryCard: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center' },
   sumIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  filterBar: { paddingVertical: 10, paddingHorizontal: 16, flexDirection: 'row' },
+  filterBar: { flexGrow: 0 },
+  filterBarContent: { paddingVertical: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
   filterChip: { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8, alignItems: 'center' },
+  list: { flex: 1 },
+  listContent: { padding: 16, paddingBottom: 136 },
   txRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   txIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   txDesc: { fontSize: 15, fontWeight: '500' },
@@ -164,7 +174,20 @@ const styles = StyleSheet.create({
   typeChip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
   methodChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
   empty: { textAlign: 'center', marginTop: 48, fontSize: 16 },
-  fab: { position: 'absolute', bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
+  fab: {
+    position: 'absolute',
+    bottom: 82,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 18px 28px rgba(6, 13, 28, 0.32)' }
+      : { elevation: 10, shadowColor: '#000', shadowOpacity: 0.32, shadowRadius: 12 }),
+  },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalContent: { borderRadius: 20, padding: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', marginBottom: 16 },

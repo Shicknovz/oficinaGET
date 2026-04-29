@@ -43,7 +43,7 @@ export interface OrdemServico {
   id: string;
   clienteId: string;
   veiculoId: string;
-  status: OSStatus;
+  status: OSSStatus;
   descricaoProblema: string;
   itens: ItemOS[];
   valorTotal: number;
@@ -60,7 +60,7 @@ export interface Agendamento {
   veiculoId: string;
   dataHora: string;
   descricao: string;
-  status: 'confirmado' | 'pendente' | 'cancelado';
+  status: 'confirmado' | 'pendente' | 'em_servico' | 'pronto' | 'cancelado';
 }
 
 export interface Peca {

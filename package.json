@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "docs:pdf": "node docs/generate-doc-pdf.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.0",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.0.0",
+    "pdfkit": "^0.18.0",
     "typescript": "~5.8.3"
   }
 }

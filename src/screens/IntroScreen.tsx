@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, Linking, Pressable, ScrollView, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -7,10 +8,11 @@ import { useTheme } from '../context/ThemeContext';
 
 interface Props {
   onLogin: () => void;
+  onRegister?: () => void;
   onSkip?: () => void;
 }
 
-export default function IntroScreen({ onLogin, onSkip }: Props) {
+export default function IntroScreen({ onLogin, onRegister, onSkip }: Props) {
   const t = useTheme();
   const screenW = Dimensions.get('window').width;
 
@@ -18,6 +20,8 @@ export default function IntroScreen({ onLogin, onSkip }: Props) {
   const servicesRef = useRef<ScrollView | null>(null);
 
   const [heroIndex, setHeroIndex] = useState(0);
+  const whatsappPhone = '5561990011234';
+  const whatsappMessage = encodeURIComponent('Olá, vim pelo aplicativo. Gostaria de maiores informações');
   const heroImages = [
     'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=1400&q=80',
     'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=1400&q=80',
@@ -57,91 +61,126 @@ export default function IntroScreen({ onLogin, onSkip }: Props) {
     return () => clearInterval(id2);
   }, []);
 
+  const handleWhatsAppPress = async () => {
+    const appUrl = `whatsapp://send?phone=${whatsappPhone}&text=${whatsappMessage}`;
+    const webUrl = `https://wa.me/${whatsappPhone}?text=${whatsappMessage}`;
+
+    try {
+      const supported = await Linking.canOpenURL(appUrl);
+      await Linking.openURL(supported ? appUrl : webUrl);
+    } catch {
+      await Linking.openURL(webUrl);
+    }
+  };
+
   return (
-    <Screen>
-      {/* HERO CAROUSEL */}
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        ref={r => (heroRef.current = r)}
-        onMomentumScrollEnd={ev => {
-          const idx = Math.round(ev.nativeEvent.contentOffset.x / screenW);
-          setHeroIndex(idx);
-        }}
-        style={{ marginBottom: 10 }}
-      >
-        {heroImages.map((uri, i) => (
-          <Image key={i} source={{ uri }} style={[styles.hero, { width: screenW - 40 }]} resizeMode="cover" />
-        ))}
-      </ScrollView>
+    <>
+      <Screen contentStyle={styles.screenContent}>
+        {/* HERO CAROUSEL */}
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          ref={r => { heroRef.current = r; }}
+          onMomentumScrollEnd={ev => {
+            const idx = Math.round(ev.nativeEvent.contentOffset.x / screenW);
+            setHeroIndex(idx);
+          }}
+          style={{ marginBottom: 10 }}
+        >
+          {heroImages.map((uri, i) => (
+            <Image key={i} source={{ uri }} style={[styles.hero, { width: screenW - 40 }]} resizeMode="cover" />
+          ))}
+        </ScrollView>
 
-      {/* Header row with logo and Entrar */}
-      <View style={styles.headerRow}>
-        <Image source={{ uri: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=160&q=60' }} style={[styles.logo, { borderColor: t.primary }]} />
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={[styles.title, { color: t.text }]}>AUTOGET</Text>
-          <Text style={[styles.tagline, { color: t.textSecondary }]}>Gestão inteligente para sua oficina</Text>
+        {/* Header row with logo and Entrar */}
+        <View style={styles.headerRow}>
+          <Image source={{ uri: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=160&q=60' }} style={[styles.logo, { borderColor: t.primary }]} />
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={[styles.title, { color: t.text }]}>AUTOGET</Text>
+            <Text style={[styles.tagline, { color: t.textSecondary }]}>Gestão inteligente para sua oficina</Text>
+          </View>
+          <Pressable onPress={onLogin} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1, padding: 8 }]}>
+            <Text style={{ color: t.primary, fontWeight: '700' }}>Entrar</Text>
+          </Pressable>
         </View>
-        <Pressable onPress={onLogin} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1, padding: 8 }]}>
-          <Text style={{ color: t.primary, fontWeight: '700' }}>Entrar</Text>
-        </Pressable>
-      </View>
 
-      {/* Services carousel */}
-      <Text style={[styles.sectionTitle, { color: t.text }]}>Nossos serviços</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        ref={r => (servicesRef.current = r)}
-        contentContainerStyle={{ paddingVertical: 8 }}
+        <View style={[styles.ctaCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.ctaTitle, { color: t.text }]}>Novo por aqui?</Text>
+            <Text style={[styles.ctaText, { color: t.textSecondary }]}>Crie seu cadastro para acompanhar atendimentos e falar com a oficina.</Text>
+          </View>
+          <Button title="Cadastrar-se" onPress={() => onRegister && onRegister()} variant="outline" />
+        </View>
+
+        {/* Services carousel */}
+        <Text style={[styles.sectionTitle, { color: t.text }]}>Nossos serviços</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          ref={r => { servicesRef.current = r; }}
+          contentContainerStyle={{ paddingVertical: 8 }}
+        >
+          {services.map((s, idx) => (
+            <View key={idx} style={styles.serviceCard}>
+              <Image source={{ uri: s.image }} style={styles.serviceImage} />
+              <View style={styles.serviceInfo}>
+                <Text style={[styles.serviceLabel, { color: t.text }]}>{s.title}</Text>
+                <Text style={[styles.serviceSub, { color: t.textSecondary }]}>{s.subtitle}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Testimonials */}
+        <Text style={[styles.sectionTitle, { color: t.text, marginTop: 6 }]}>Depoimentos</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 8 }}>
+          {testimonials.map((tst, i) => (
+            <View key={i} style={[styles.testimonialCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+              <Image source={{ uri: tst.avatar }} style={styles.avatar} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={[styles.reviewText, { color: t.text }]}>{tst.text}</Text>
+                <Text style={[styles.reviewAuthor, { color: t.textSecondary }]}>{tst.name} • {'★'.repeat(tst.stars)}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+
+        <Card>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Endereço</Text>
+          <Text style={[styles.paragraph, { color: t.textSecondary }]}>R. do Comércio, 123 — Samambaia, Brasília/DF</Text>
+
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Contato</Text>
+          <Text style={[styles.paragraph, { color: t.textSecondary }]}>Telefone: (61) 99001-1234</Text>
+        </Card>
+
+        <View style={styles.actions}>
+          <Button title="Abrir mapa" onPress={() => Linking.openURL('https://www.google.com/maps/search/Samambaia+Bras%C3%ADlia+DF')} fullWidth={true} />
+        </View>
+      </Screen>
+
+      <Pressable
+        onPress={handleWhatsAppPress}
+        style={[styles.whatsappFab, { backgroundColor: '#25D366' }]}
+        accessibilityRole="button"
+        accessibilityLabel="Falar no WhatsApp"
       >
-        {services.map((s, idx) => (
-          <View key={idx} style={styles.serviceCard}>
-            <Image source={{ uri: s.image }} style={styles.serviceImage} />
-            <View style={styles.serviceInfo}>
-              <Text style={[styles.serviceLabel, { color: t.text }]}>{s.title}</Text>
-              <Text style={[styles.serviceSub, { color: t.textSecondary }]}>{s.subtitle}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Testimonials */}
-      <Text style={[styles.sectionTitle, { color: t.text, marginTop: 6 }]}>Depoimentos</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 8 }}>
-        {testimonials.map((tst, i) => (
-          <View key={i} style={[styles.testimonialCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
-            <Image source={{ uri: tst.avatar }} style={styles.avatar} />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={[styles.reviewText, { color: t.text }]}>{tst.text}</Text>
-              <Text style={[styles.reviewAuthor, { color: t.textSecondary }]}>{tst.name} • {'★'.repeat(tst.stars)}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      <Card>
-        <Text style={[styles.sectionTitle, { color: t.text }]}>Endereço</Text>
-        <Text style={[styles.paragraph, { color: t.textSecondary }]}>R. do Comércio, 123 — Samambaia, Brasília/DF</Text>
-
-        <Text style={[styles.sectionTitle, { color: t.text }]}>Contato</Text>
-        <Text style={[styles.paragraph, { color: t.textSecondary }]}>Telefone: (61) 99001-1234</Text>
-      </Card>
-
-      <View style={styles.actions}>
-        <Button title="Abrir mapa" onPress={() => Linking.openURL('https://www.google.com/maps/search/Samambaia+Bras%C3%ADlia+DF')} fullWidth={true} />
-      </View>
-    </Screen>
+        <Ionicons name="logo-whatsapp" size={30} color="#FFFFFF" />
+      </Pressable>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  screenContent: { paddingBottom: 96 },
   hero: { width: '100%', height: 200, borderRadius: 12, marginBottom: 12 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   logo: { width: 72, height: 72, borderRadius: 12, borderWidth: 2, backgroundColor: '#fff' },
   title: { fontSize: 26, fontWeight: '800' },
   tagline: { fontSize: 13, marginTop: 4 },
+  ctaCard: { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 10, gap: 14 },
+  ctaTitle: { fontSize: 18, fontWeight: '800', marginBottom: 6 },
+  ctaText: { fontSize: 14, lineHeight: 20 },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginTop: 8 },
   paragraph: { fontSize: 14, marginTop: 6, lineHeight: 20 },
 
@@ -159,4 +198,18 @@ const styles = StyleSheet.create({
   reviewAuthor: { fontSize: 12, marginTop: 6 },
 
   actions: { marginTop: 18, gap: 8 },
+  whatsappFab: {
+    position: 'absolute',
+    right: 22,
+    bottom: 26,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+  },
 });

@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
-type Variant = 'aberta' | 'em_andamento' | 'aguardando_peca' | 'concluida' | 'cancelada'
-  | 'confirmado' | 'pendente' | 'pago' | 'atrasado' | 'receita' | 'despesa';
+type Variant = 'aberta' | 'em_andamento' | 'aguardando_peca' | 'concluida' | 'cancelada' | 'cancelado'
+  | 'confirmado' | 'pendente' | 'em_servico' | 'pronto' | 'pago' | 'atrasado' | 'receita' | 'despesa';
 
 const CONFIG: Record<Variant, { label: string; bgLight: string; bgDark: string; textLight: string; icon: string }> = {
   aberta:               { label: 'Aberta', bgLight: '#D1F0FF', bgDark: '#0C1A2A', textLight: '#0969DA', icon: '📋' },
@@ -11,8 +11,11 @@ const CONFIG: Record<Variant, { label: string; bgLight: string; bgDark: string; 
   aguardando_peca:      { label: 'Aguardando Peça', bgLight: '#FFF8C5', bgDark: '#1A1508', textLight: '#D29922', icon: '📦' },
   concluida:            { label: 'Concluída', bgLight: '#E8F5EC', bgDark: '#0D1A0F', textLight: '#1A7F37', icon: '✅' },
   cancelada:            { label: 'Cancelada', bgLight: '#FFEBEC', bgDark: '#1C0C0B', textLight: '#CF222E', icon: '❌' },
+  cancelado:            { label: 'Cancelado', bgLight: '#FFEBEC', bgDark: '#1C0C0B', textLight: '#CF222E', icon: '❌' },
   confirmado:           { label: 'Confirmado', bgLight: '#E8F5EC', bgDark: '#0D1A0F', textLight: '#1A7F37', icon: '📌' },
   pendente:             { label: 'Pendente', bgLight: '#FFF8C5', bgDark: '#1A1508', textLight: '#9A6700', icon: '⏳' },
+  em_servico:           { label: 'Em serviço', bgLight: '#E8F1FF', bgDark: '#0C1A2A', textLight: '#1F6FEB', icon: '🛠️' },
+  pronto:               { label: 'Pronto', bgLight: '#E7F8EF', bgDark: '#0D1A0F', textLight: '#1A7F37', icon: '✅' },
   pago:                 { label: 'Pago', bgLight: '#E8F5EC', bgDark: '#0D1A0F', textLight: '#1A7F37', icon: '💰' },
   atrasado:             { label: 'Atrasado', bgLight: '#FFEBEC', bgDark: '#1C0C0B', textLight: '#CF222E', icon: '⚠️' },
   receita:              { label: 'Receita', bgLight: '#E8F5EC', bgDark: '#0D1A0F', textLight: '#1A7F37', icon: '📈' },
@@ -26,10 +29,10 @@ interface Props {
 export default function StatusBadge({ status }: Props) {
   const t = useTheme();
   const c = CONFIG[status] || CONFIG.aberta;
-  const isDark = t.bg === '#0D1117';
+  const isDark = t.bg !== '#F4F7FB';
 
   return (
-    <View style={[styles.badge, { backgroundColor: isDark ? c.bgDark : c.bgLight }]}>
+    <View style={[styles.badge, { backgroundColor: isDark ? c.bgDark : c.bgLight, borderColor: `${c.textLight}30` }]}>
       <View style={[styles.dot, { backgroundColor: c.textLight }]} />
       <Text style={[styles.text, { color: c.textLight }]}>{c.label}</Text>
     </View>
@@ -44,6 +47,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     alignSelf: 'flex-start',
+    borderWidth: 1,
   },
   dot: {
     width: 8,
@@ -51,5 +55,5 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginRight: 8,
   },
-  text: { fontSize: 12, fontWeight: '600' },
+  text: { fontSize: 12, fontWeight: '700' },
 });

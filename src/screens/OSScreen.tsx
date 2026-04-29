@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Modal, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Modal, TouchableOpacity, FlatList, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -17,6 +17,11 @@ const STATUS_OPTIONS: { value: OSSStatus; label: string }[] = [
   { value: 'aguardando_peca', label: '📦 Aguardando Peça' },
   { value: 'concluida', label: '✅ Concluída' },
   { value: 'cancelada', label: '❌ Cancelada' },
+];
+
+const FILTER_OPTIONS: Array<{ key: string; label: string }> = [
+  { key: 'todos', label: 'Todas' },
+  ...STATUS_OPTIONS.map((option) => ({ key: option.value, label: option.label })),
 ];
 
 export default function OSScreen() {
@@ -77,17 +82,22 @@ export default function OSScreen() {
   };
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} contentStyle={styles.screenContent}>
       {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterBar, { borderBottomColor: t.border }]}>
-        {[{ key: 'todos', label: 'Todas' }, ...STATUS_OPTIONS].map(f => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.filterBar, { borderBottomColor: t.border }]}
+        contentContainerStyle={styles.filterBarContent}
+      >
+        {FILTER_OPTIONS.map(f => (
           <TouchableOpacity
-            key={f.key || f.value}
-            style={[styles.filterChip, { backgroundColor: filter === (f.key || f.value) ? t.primary : t.bgCard, borderColor: t.border }]}
-            onPress={() => setFilter(f.key || f.value)}
+            key={f.key}
+            style={[styles.filterChip, { backgroundColor: filter === f.key ? t.primary : t.bgCard, borderColor: t.border }]}
+            onPress={() => setFilter(f.key)}
           >
-            <Text style={{ color: filter === (f.key || f.value) ? '#FFF' : t.textSecondary, fontWeight: '600', fontSize: 13 }}>
-              {f.label || f.value}
+            <Text style={{ color: filter === f.key ? '#FFF' : t.textSecondary, fontWeight: '600', fontSize: 13 }}>
+              {f.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -95,9 +105,10 @@ export default function OSScreen() {
 
       {/* OS List */}
       <FlatList
+        style={styles.list}
         data={filtered}
         keyExtractor={o => o.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={styles.listContent}
         extraData={ordensServico}
         renderItem={({ item }) => {
           const cliente = getCliente(item.clienteId);
@@ -250,9 +261,26 @@ export default function OSScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  filterBar: { paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1 },
+  screenContent: { flex: 1, minHeight: 0 },
+  filterBar: { flexGrow: 0, borderBottomWidth: 1 },
+  filterBarContent: { paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center' },
   filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8 },
-  fab: { position: 'absolute', bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8 },
+  list: { flex: 1 },
+  listContent: { padding: 16, paddingBottom: 136 },
+  fab: {
+    position: 'absolute',
+    bottom: 82,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 18px 28px rgba(6, 13, 28, 0.32)' }
+      : { elevation: 10, shadowColor: '#000', shadowOpacity: 0.32, shadowRadius: 12 }),
+  },
   osHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   osId: { fontSize: 15, fontWeight: '700' },
   osDesc: { fontSize: 15, marginBottom: 4 },

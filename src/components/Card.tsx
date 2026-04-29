@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, type ViewStyle } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, type ViewStyle } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface Props {
@@ -19,7 +19,7 @@ export default function Card({ children, onPress, style }: Props) {
 
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.86}>
         {content}
       </TouchableOpacity>
     );
@@ -30,16 +30,19 @@ export default function Card({ children, onPress, style }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 18,
     marginVertical: 8,
     marginBottom: 8,
-    // subtle shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 10px 30px rgba(5, 10, 22, 0.18)' }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.14,
+          shadowRadius: 18,
+          elevation: 5,
+        }),
   },
 });

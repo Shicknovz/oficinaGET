@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, View, Text, StyleSheet, type TextInputProps, type ViewStyle } from 'react-native';
+import { TextInput, View, Text, StyleSheet, Platform, type TextInputProps, type ViewStyle } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface Props extends TextInputProps {
@@ -22,6 +22,11 @@ export default function Input({ label, error, containerStyle, ...props }: Props)
             backgroundColor: t.bgInput,
             borderColor: error ? t.danger : focused ? t.borderFocus : t.border,
             color: t.text,
+            ...(focused
+              ? Platform.OS === 'web'
+                ? { boxShadow: `0px 0px 0px 3px ${t.borderFocus}22` }
+                : { shadowColor: t.borderFocus, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.18, shadowRadius: 10, elevation: 2 }
+              : null),
           },
         ]}
         placeholderTextColor={t.textMuted}
@@ -37,6 +42,6 @@ export default function Input({ label, error, containerStyle, ...props }: Props)
 const styles = StyleSheet.create({
   container: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: '600', marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
+  input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15 },
   error: { fontSize: 12, marginTop: 6 },
 });

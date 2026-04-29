@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentação Técnica - AUTOGET</title>
+  <style>
+    :root {
+      --bg: #0a0f1e;
+      --card: #131c2e;
+      --text: #f3f7ff;
+      --muted: #9fb0cc;
+      --primary: #6ea8fe;
+      --border: #24324b;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef3fb;
+      color: #162033;
+      line-height: 1.55;
+    }
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 28px 64px;
+      background: #fff;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0a0f1e, #131c2e);
+      color: var(--text);
+      padding: 28px;
+      border-radius: 20px;
+      margin-bottom: 28px;
+    }
+    h1, h2, h3 { color: #0f1a2f; }
+    .hero h1, .hero h2, .hero h3 { color: var(--text); }
+    h1 { font-size: 30px; margin: 0 0 8px; }
+    h2 {
+      margin-top: 30px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #dbe5f3;
+      font-size: 22px;
+    }
+    h3 { margin-top: 20px; font-size: 17px; }
+    p, li { font-size: 14px; }
+    .meta { color: var(--muted); font-size: 14px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .card {
+      border: 1px solid #dbe5f3;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fafcff;
+    }
+    code {
+      background: #edf3ff;
+      color: #173a8a;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .note {
+      border-left: 4px solid var(--primary);
+      background: #eef5ff;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin: 14px 0;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #edf3ff;
+      color: #173a8a;
+      font-size: 12px;
+      font-weight: bold;
+      margin: 2px 4px 2px 0;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 18px;
+      border-top: 1px solid #dbe5f3;
+      color: #64748b;
+      font-size: 12px;
+    }
+    @media print {
+      body { background: #fff; }
+      .page { padding: 0; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <h1>Documentação Técnica do Sistema AUTOGET</h1>
+      <p class="meta">Data: 29/04/2026 • Projeto: <code>OficinaPro</code> • Stack: <code>Expo</code> + <code>React Native</code> + <code>TypeScript</code> + <code>React Navigation</code></p>
+      <p>Este documento explica a arquitetura, os códigos principais e as lógicas de funcionamento do sistema AUTOGET, incluindo autenticação demonstrativa, módulos operacionais, persistência local, navegação, componentes reutilizáveis e regras de negócio atuais.</p>
+    </section>
+
+    <h2>1. Visão geral do sistema</h2>
+    <p>O AUTOGET é um sistema de gestão para oficina mecânica com foco em operação diária. A aplicação foi construída como uma demo funcional, mas já usa padrões de organização próximos de um sistema real de produção.</p>
+    <div class="grid">
+      <div class="card"><strong>Fluxos cobertos</strong><br/>Intro, login, cadastro, dashboard, clientes, veículos, ordens de serviço, agendamentos, estoque, financeiro e notificações.</div>
+      <div class="card"><strong>Arquitetura</strong><br/>Dados centralizados em contexto global com reducer, componentes reutilizáveis e persistência local na web.</div>
+      <div class="card"><strong>Execução</strong><br/>Preparado para <code>web</code>, <code>android</code> e <code>ios</code> usando Expo.</div>
+      <div class="card"><strong>Estado atual</strong><br/>Sem backend real; dados e autenticação são simulados para demonstração e validação de UX.</div>
+    </div>
+
+    <h2>2. Estrutura do projeto</h2>
+    <p>Os arquivos principais estão organizados por responsabilidade:</p>
+    <ul>
+      <li><code>App.tsx</code>: fluxo principal entre intro, login, cadastro e app autenticado.</li>
+      <li><code>src/context</code>: estado global, tema e menu.</li>
+      <li><code>src/navigation</code>: abas principais.</li>
+      <li><code>src/components</code>: blocos reutilizáveis de interface.</li>
+      <li><code>src/screens</code>: telas de negócio.</li>
+      <li><code>src/types</code>: contratos do domínio.</li>
+      <li><code>src/utils</code>: helpers e persistência local.</li>
+    </ul>
+
+    <h2>3. Fluxo de entrada do app</h2>
+    <p>O arquivo <code>App.tsx</code> decide qual tela renderizar com base em três flags persistidas:</p>
+    <p><span class="pill">loggedIn</span><span class="pill">showIntro</span><span class="pill">showRegister</span></p>
+    <p>Ordem de decisão:</p>
+    <ol>
+      <li>Se estiver logado, renderiza <code>MainTabs</code>.</li>
+      <li>Se <code>showRegister</code> for verdadeiro, abre <code>RegisterScreen</code>.</li>
+      <li>Se <code>showIntro</code> for verdadeiro, abre <code>IntroScreen</code>.</li>
+      <li>Caso contrário, abre <code>LoginScreen</code>.</li>
+    </ol>
+    <div class="note">Essa ordem foi importante para corrigir o CTA de cadastro: antes, a intro tinha prioridade e impedia a abertura da tela de registro.</div>
+
+    <h2>4. Tema e visual</h2>
+    <p><code>ThemeContext.tsx</code> detecta tema claro/escuro via <code>useColorScheme()</code>. As paletas ficam em <code>src/utils/theme.ts</code>, centralizando cores de fundo, cards, bordas, textos e estados semânticos.</p>
+    <ul>
+      <li><strong>Tema escuro</strong>: identidade principal da aplicação, com fundo azul escuro e destaque em azul claro.</li>
+      <li><strong>Tema claro</strong>: mantém a mesma hierarquia semântica para acessibilidade e coerência visual.</li>
+    </ul>
+
+    <h2>5. Estado global e persistência</h2>
+    <p><code>src/context/AppContext.tsx</code> é o núcleo lógico do sistema.</p>
+    <div class="grid">
+      <div class="card"><strong>Fonte única de verdade</strong><br/>Clientes, veículos, OS, agendamentos, peças e transações ficam centralizados em um reducer.</div>
+      <div class="card"><strong>Dados mockados</strong><br/>O sistema inicia com coleções exemplo para permitir demonstração completa sem API.</div>
+      <div class="card"><strong>CRUD global</strong><br/>As telas consomem funções como <code>addCliente</code>, <code>updateOS</code>, <code>addTransacao</code> e <code>updateAgendamento</code>.</div>
+      <div class="card"><strong>Persistência web</strong><br/>O estado inteiro é salvo em <code>autoget:data-state</code> por meio de <code>localStorage</code>.</div>
+    </div>
+    <p>Benefícios dessa abordagem:</p>
+    <ul>
+      <li>mudanças instantâneas em todas as telas;</li>
+      <li>redução da sensação de reinício do app na web;</li>
+      <li>facilidade para trocar mocks por API futuramente.</li>
+    </ul>
+
+    <h2>6. Modelos de dados</h2>
+    <p>Os tipos principais ficam em <code>src/types/index.ts</code>.</p>
+    <ul>
+      <li><strong>Cliente</strong>: cadastro da pessoa.</li>
+      <li><strong>Veiculo</strong>: veículo ligado a um cliente via <code>clienteId</code>.</li>
+      <li><strong>OrdemServico</strong>: processo técnico da oficina.</li>
+      <li><strong>ItemOS</strong>: item de mão de obra ou peça dentro da OS.</li>
+      <li><strong>Agendamento</strong>: compromissos operacionais, com status <code>confirmado</code>, <code>pendente</code>, <code>em_servico</code>, <code>pronto</code> e <code>cancelado</code>.</li>
+      <li><strong>Peca</strong>: estoque, preços e fornecedor.</li>
+      <li><strong>TransacaoFinanceira</strong>: entradas e saídas financeiras.</li>
+    </ul>
+
+    <h2>7. Navegação principal</h2>
+    <p><code>src/navigation/MainTabs.tsx</code> usa <code>createBottomTabNavigator</code> para montar a aplicação principal.</p>
+    <p>Abas atuais:</p>
+    <p><span class="pill">Dashboard</span><span class="pill">Clientes</span><span class="pill">OS</span><span class="pill">Financeiro</span></p>
+    <p>A barra inferior foi customizada para exibir ícone e label dentro do próprio <code>tabBarIcon</code>, com destaque visual na aba ativa.</p>
+    <div class="note">Houve uma correção importante removendo um botão customizado da tab bar que fazia todas as abas navegarem para o dashboard. Agora a navegação usa o comportamento nativo do React Navigation.</div>
+
+    <h2>8. Menu hambúrguer</h2>
+    <p>O menu compartilhado foi dividido em duas peças:</p>
+    <ul>
+      <li><code>AppMenuContext.tsx</code>: injeta a ação de logout;</li>
+      <li><code>AppMenuButton.tsx</code>: desenha o botão, abre o modal e navega entre rotas.</li>
+    </ul>
+    <p>Isso permitiu exibir o menu em várias telas sem duplicar lógica.</p>
+
+    <h2>9. Componentes reutilizáveis</h2>
+    <div class="grid">
+      <div class="card"><strong>Screen</strong><br/>Layout base com <code>SafeAreaView</code>, largura máxima, suporte a scroll e integração automática com menu.</div>
+      <div class="card"><strong>Card</strong><br/>Container visual reutilizável com borda, sombra e clique opcional.</div>
+      <div class="card"><strong>Button</strong><br/>Botão com variantes semânticas, suporte a ícone, loading e largura total.</div>
+      <div class="card"><strong>Input</strong><br/>Campo com label, erro e feedback visual de foco.</div>
+      <div class="card"><strong>StatusBadge</strong><br/>Mostra estados padronizados de OS, agendamento e financeiro.</div>
+    </div>
+
+    <h2>10. Explicação das telas</h2>
+
+    <h3>10.1 Intro</h3>
+    <p><code>IntroScreen.tsx</code> funciona como landing page. Exibe carrosséis automáticos, CTA de entrar, CTA de cadastro, lista de serviços, depoimentos e contato via WhatsApp.</p>
+
+    <h3>10.2 Login</h3>
+    <p><code>LoginScreen.tsx</code> simula autenticação. O botão <code>Entrar</code> apenas aguarda um tempo curto e chama <code>onLogin()</code>. Na web, os campos ficam dentro de <code>form</code> para evitar alertas do navegador.</p>
+
+    <h3>10.3 Cadastro</h3>
+    <p><code>RegisterScreen.tsx</code> repete a lógica demonstrativa do login, com simulação de cadastro por <code>setTimeout</code>.</p>
+
+    <h3>10.4 Dashboard</h3>
+    <p><code>DashboardScreen.tsx</code> consolida dados de vários módulos:</p>
+    <ul>
+      <li>quantidade de clientes, veículos e OS por status;</li>
+      <li>peças com estoque baixo;</li>
+      <li>receitas, despesas, saldo líquido e ticket médio;</li>
+      <li>lista de ordens recentes.</li>
+    </ul>
+    <p>Também concentra o modal de notificações. As notificações são derivadas de agendamentos com status <code>confirmado</code> ou <code>pendente</code>. Cada notificação oferece ações <code>Pronto</code>, <code>Em serviço</code> e <code>Cancelado</code>. Ao clicar, o status é alterado e a notificação desaparece do modal.</p>
+
+    <h3>10.5 Clientes</h3>
+    <p><code>ClientesScreen.tsx</code> implementa CRUD com busca por nome/CPF, modal de criação/edição e exclusão rápida. Também mostra a quantidade de veículos por cliente.</p>
+
+    <h3>10.6 Veículos</h3>
+    <p><code>VeiculosScreen.tsx</code> permite buscar por marca/modelo/placa, editar veículos e relacioná-los a clientes.</p>
+
+    <h3>10.7 Ordens de Serviço</h3>
+    <p><code>OSScreen.tsx</code> contém uma das lógicas mais importantes do projeto:</p>
+    <ul>
+      <li>filtro por status;</li>
+      <li>detalhamento da OS;</li>
+      <li>alteração de status;</li>
+      <li>criação de nova OS;</li>
+      <li>adição de itens;</li>
+      <li>recalculo do valor total.</li>
+    </ul>
+    <p>Novas OS são criadas como <code>aberta</code>. O valor total é derivado da soma de <code>quantidade * valorUnitario</code> dos itens.</p>
+
+    <h3>10.8 Agendamentos</h3>
+    <p><code>AgendamentoScreen.tsx</code> organiza compromissos por data, permite cadastro, confirmação, desconfirmação e exclusão. Embora não esteja hoje na tab principal, o módulo está pronto e integra o mesmo contexto global.</p>
+
+    <h3>10.9 Estoque</h3>
+    <p><code>EstoqueScreen.tsx</code> controla peças, níveis de estoque e preços. A tela usa indicadores visuais para estoque normal, baixo e crítico, além de permitir ajuste rápido com botões de incremento e decremento.</p>
+
+    <h3>10.10 Financeiro</h3>
+    <p><code>FinanceiroScreen.tsx</code> calcula receitas, despesas e saldo, filtra transações por tipo e status e permite adicionar novas movimentações por modal.</p>
+
+    <h2>11. Helpers e utilidades</h2>
+    <p><code>src/utils/helpers.ts</code> centraliza formatação de moeda, data, data e hora e telefone. Já <code>src/utils/storage.ts</code> encapsula o uso seguro de <code>localStorage</code> na web, protegendo o app contra falhas em plataformas onde a API de armazenamento não existe.</p>
+
+    <h2>12. Padrões de lógica adotados</h2>
+    <ul>
+      <li><strong>Contexto como fonte única</strong>: as telas não possuem sua própria base de dados.</li>
+      <li><strong>CRUD em modal</strong>: padrão repetido em clientes, veículos, estoque, OS, agendamentos e financeiro.</li>
+      <li><strong>Estados derivados</strong>: contagens e filtros são calculados no momento da renderização ou com <code>useMemo</code>.</li>
+      <li><strong>Compatibilidade por plataforma</strong>: ajustes de <code>form</code>, <code>boxShadow</code> e comportamento visual para web/mobile.</li>
+    </ul>
+
+    <h2>13. Limitações atuais</h2>
+    <ul>
+      <li>não há backend real;</li>
+      <li>autenticação é apenas visual/demonstrativa;</li>
+      <li>não existe multiusuário com permissões;</li>
+      <li>persistência é local, não sincronizada.</li>
+    </ul>
+
+    <h2>14. Próximos passos recomendados</h2>
+    <ul>
+      <li>integrar API ou banco cloud como Supabase/Firebase;</li>
+      <li>substituir autenticação fake por login real;</li>
+      <li>criar relatórios e comprovantes em PDF;</li>
+      <li>ligar notificações a eventos reais;</li>
+      <li>expandir tabs para veículos, estoque e agendamentos.</li>
+    </ul>
+
+    <h2>15. Conclusão</h2>
+    <p>O AUTOGET já tem uma base técnica sólida: separação clara de responsabilidades, tipagem consistente, tema centralizado, navegação organizada, persistência local e módulos funcionais por área da oficina. Mesmo como demo, ele já demonstra a lógica completa de um sistema operacional de oficina e está bem preparado para evolução futura.</p>
+
+    <div class="footer">
+      Documento gerado no workspace do projeto AUTOGET para fins de documentação técnica interna.
+    </div>
+  </div>
+</body>
+</html>

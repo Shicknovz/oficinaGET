@@ -1,73 +1,206 @@
-AUTOGET (Oficina)
+# AUTOGET
 
-Aplicativo de gestão para oficinas — ordens de serviço, agendamentos, estoque e financeiro.
+Sistema de gestão para oficina mecânica desenvolvido com `Expo`, `React Native` e `TypeScript`, com foco em operação diária, organização visual e demonstração de fluxo completo de atendimento.
 
-Este repositório contém uma versão em desenvolvimento do aplicativo mobile `AUTOGET` (baseado em Expo / React Native).
+## Visão geral
 
-## Status
+O `AUTOGET` simula o funcionamento de uma oficina moderna em uma única aplicação. O projeto foi estruturado para rodar em `web`, `android` e `ios`, usando dados locais com persistência no navegador para facilitar demonstração, testes visuais e evolução futura para backend real.
 
-- Tela de introdução (landing) com carrossel, serviços e depoimentos implementada.
-- Fluxo básico: Intro -> Login -> Main Tabs.
-- Projeto inicial importado e enviado para GitHub.
+Hoje o sistema já cobre:
+
+- tela de apresentação com CTA de login, cadastro e contato via WhatsApp;
+- autenticação demonstrativa;
+- dashboard com métricas e notificações acionáveis;
+- gestão de clientes;
+- gestão de veículos;
+- ordens de serviço;
+- agendamentos;
+- controle de estoque;
+- financeiro;
+- persistência local de estado na web.
+
+## Tecnologias
+
+- `Expo`
+- `React Native`
+- `React Navigation`
+- `TypeScript`
+- `React Native Web`
+- `PDFKit` para geração da documentação em PDF
+
+## Principais funcionalidades
+
+### Fluxo inicial
+
+- `IntroScreen`: landing page com carrossel, serviços, depoimentos e botão flutuante do WhatsApp.
+- `LoginScreen`: acesso demonstrativo ao sistema.
+- `RegisterScreen`: tela de cadastro simulada.
+
+### Módulos de negócio
+
+- `Dashboard`: indicadores operacionais, financeiros e notificações de agendamento.
+- `Clientes`: cadastro, edição, busca e exclusão.
+- `Veículos`: associação com clientes e controle de dados do veículo.
+- `OS`: criação de ordens, mudança de status e cálculo de itens.
+- `Agendamentos`: controle cronológico dos atendimentos.
+- `Estoque`: gerenciamento de peças e alerta visual de estoque baixo.
+- `Financeiro`: receitas, despesas, saldo e filtros por transação.
+
+### Recursos técnicos já implementados
+
+- estado global centralizado com `Context` + `Reducer`;
+- persistência local com `localStorage` na versão web;
+- tema claro/escuro centralizado;
+- componentes reutilizáveis para layout, botões, inputs, cards e badges de status;
+- menu hambúrguer compartilhado entre as telas principais;
+- documentação técnica em `Markdown`, `HTML` e `PDF`.
+
+## Estrutura do projeto
+
+```text
+OficinaPro/
+├── App.tsx
+├── package.json
+├── docs/
+│   ├── SISTEMA_AUTOGET.md
+│   ├── SISTEMA_AUTOGET.html
+│   ├── SISTEMA_AUTOGET.pdf
+│   └── generate-doc-pdf.js
+└── src/
+	├── components/
+	├── context/
+	├── navigation/
+	├── screens/
+	├── types/
+	└── utils/
+```
+
+## Arquitetura resumida
+
+### `App.tsx`
+
+Controla o fluxo principal entre intro, login, cadastro e aplicação autenticada. Também salva o estado de interface para manter a experiência consistente na web.
+
+### `src/context/AppContext.tsx`
+
+É o núcleo do sistema. Centraliza as coleções principais:
+
+- clientes;
+- veículos;
+- ordens de serviço;
+- agendamentos;
+- peças;
+- transações financeiras.
+
+Além disso, expõe as ações de criação, edição, remoção e atualização consumidas pelas telas.
+
+### `src/navigation/MainTabs.tsx`
+
+Organiza as abas principais visíveis do app:
+
+- `Dashboard`
+- `Clientes`
+- `OS`
+- `Financeiro`
+
+### `src/components`
+
+Contém os blocos reutilizáveis de interface, como:
+
+- `Screen`
+- `Card`
+- `Button`
+- `Input`
+- `StatusBadge`
+- `AppMenuButton`
 
 ## Pré-requisitos
 
-- Node.js (recomendo LTS >= 16)
-- npm (ou yarn)
-- Expo (usado via `npx expo`)
+- `Node.js` LTS
+- `npm`
+- Expo via `npx`
 
-## Instalação e execução (desenvolvimento)
+## Instalação
 
-No PowerShell (Windows):
+No `PowerShell`:
 
 ```powershell
-cd C:\Users\liopo\Desktop\Teste-main\OficinaPro
+Set-Location "C:\Users\liopo\Desktop\Teste-main\OficinaPro"
 npm install
-npx expo start -c
 ```
 
-Depois, abra o Expo DevTools, use um emulador ou escaneie o QR code com Expo Go (atenção à compatibilidade de SDK — algumas dependências mostram avisos durante o start). 
+## Execução
 
-## Notas sobre imagens e conteúdo
+### Ambiente padrão
 
-- A tela de Introdução (`src/screens/IntroScreen.tsx`) atualmente usa imagens remotas (Unsplash) como placeholders.
-- Para usar imagens locais, crie a pasta `assets/` na raiz do projeto e coloque arquivos como `assets/hero.jpg`, `assets/logo.png`, `assets/service-1.jpg`, etc. Em seguida, atualize os imports no `IntroScreen` para usar `require('../assets/hero.jpg')`.
-
-Exemplo (local):
-
-```tsx
-// antes: source={{ uri: 'https://...' }}
-// depois:
-<Image source={require('../assets/hero.jpg')} />
+```powershell
+npm start
 ```
 
-## Persistência do Intro
+### Web
 
-Atualmente a tela Intro é controlada em memória (sempre aparece ao iniciar). Para mostrar apenas na primeira execução é recomendado salvar um flag com `@react-native-async-storage/async-storage` e ler antes de decidir exibir a tela.
+```powershell
+npm run web
+```
 
-## Testes e qualidade
+### Android
 
-- Não há testes automatizados no momento.
-- Sugiro adicionar lint/format (ESLint/Prettier) e um CI básico (GitHub Actions) para validar builds e testes.
+```powershell
+npm run android
+```
 
-## Publicação / Builds nativos
+### iOS
 
-- Para gerar builds nativos recomendo usar EAS Build da Expo (requer configuração de conta e credenciais iOS/Android).
+```powershell
+npm run ios
+```
 
-## Push e histórico
+## Documentação técnica gerada
 
-- Este código foi inicializado localmente e empurrado para: `https://github.com/Shicknovz/oficinaGET`.
+O projeto já possui uma documentação completa do sistema em três formatos:
 
-## Contribuição
+- `docs/SISTEMA_AUTOGET.md`
+- `docs/SISTEMA_AUTOGET.html`
+- `docs/SISTEMA_AUTOGET.pdf`
 
-1. Fork
-2. Crie uma branch: `git checkout -b feat/nova-coisa`
-3. Commit suas alterações: `git commit -m "feat: descreva a mudança"`
-4. Abra um Pull Request
+Para regenerar o PDF:
 
-## Contato
+```powershell
+npm run docs:pdf
+```
 
-Se quiser que eu inclua imagens locais, depoimentos reais, ou persista a dismissão do Intro, envie os arquivos e/ou textos e eu integro.
+## Persistência de dados
 
----
-Projeto gerado e mantido localmente — personalize conforme necessário.
+Na versão web, o aplicativo salva informações no `localStorage` usando os utilitários em `src/utils/storage.ts`.
+
+Chaves atualmente utilizadas:
+
+- `autoget:ui-state`
+- `autoget:data-state`
+
+Isso permite manter o estado da interface e os dados simulados entre recarregamentos do navegador.
+
+## Observações importantes
+
+- a autenticação atual é demonstrativa;
+- os dados ainda não vêm de uma API real;
+- o projeto está pronto para futura integração com backend;
+- algumas telas existem no código mesmo quando não estão nas abas principais.
+
+## Próximos passos sugeridos
+
+- integrar backend real (`Supabase`, `Firebase` ou API própria);
+- implementar autenticação real com perfis;
+- expandir relatórios e exportações;
+- adicionar testes automatizados;
+- configurar lint, formatação e CI.
+
+## Repositório
+
+Repositório informado no histórico do projeto:
+
+- `https://github.com/Shicknovz/oficinaGET`
+
+## Licença
+
+Este projeto está em desenvolvimento e pode ser adaptado conforme a necessidade da oficina ou da equipe responsável.
