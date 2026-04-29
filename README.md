@@ -122,10 +122,10 @@ Contém os blocos reutilizáveis de interface, como:
 
 ## Instalação
 
-No `PowerShell`:
+Baixe o ZIP do `AutoGET`:
 
 ```powershell
-Set-Location "C:\Users\liopo\Desktop\Teste-main\OficinaPro"
+Baixe as dependências com:
 npm install
 ```
 
