@@ -18,8 +18,15 @@ export default function LoginScreen({ onLogin, onBack, onRegister, onForgotPassw
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; senha?: string }>({});
 
   const handleLogin = () => {
+    const nextErrors: typeof errors = {};
+    if (!email.trim()) nextErrors.email = 'Informe seu e-mail.';
+    else if (!email.includes('@')) nextErrors.email = 'Digite um e-mail válido.';
+    if (!senha.trim()) nextErrors.senha = 'Informe sua senha.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -37,6 +44,7 @@ export default function LoginScreen({ onLogin, onBack, onRegister, onForgotPassw
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
+        error={errors.email}
       />
       <Input
         label="Senha"
@@ -44,6 +52,7 @@ export default function LoginScreen({ onLogin, onBack, onRegister, onForgotPassw
         value={senha}
         onChangeText={setSenha}
         secureTextEntry
+        error={errors.senha}
       />
 
       {!!onForgotPassword && (

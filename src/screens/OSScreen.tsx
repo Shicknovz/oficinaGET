@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, FlatList, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -28,12 +29,14 @@ const FILTER_OPTIONS: Array<{ key: string; label: string }> = [
 
 export default function OSScreen() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const { ordensServico, clientes, veiculos, addOS, updateOS, addOSItem } = useApp();
   const [filter, setFilter] = useState<string>('todos');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedOS, setSelectedOS] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [addForm, setAddForm] = useState({ clienteId: '', veiculoId: '', descricaoProblema: '', mecanicoResponsavel: 'Marcos' });
+  const [formErrors, setFormErrors] = useState<{ clienteId?: string; veiculoId?: string; descricaoProblema?: string }>({});
   const [statusModal, setStatusModal] = useState(false);
   const [itemForm, setItemForm] = useState<{ descricao: string; quantidade: string; valorUnitario: string; tipo: string }>({
     descricao: '', quantidade: '1', valorUnitario: '', tipo: 'mao_de_obra',
@@ -48,6 +51,7 @@ export default function OSScreen() {
   }, [ordensServico, filter]);
   const abertas = useMemo(() => ordensServico.filter(o => o.status === 'aberta').length, [ordensServico]);
   const andamento = useMemo(() => ordensServico.filter(o => o.status === 'em_andamento').length, [ordensServico]);
+  const veiculosDoCliente = useMemo(() => veiculos.filter(v => v.clienteId === addForm.clienteId), [veiculos, addForm.clienteId]);
 
   const openDetail = (os: any) => { setSelectedOS(os); setDetailOpen(true); };
   const changeStatus = (os: any, status: OSSStatus) => {
@@ -57,7 +61,12 @@ export default function OSScreen() {
   };
 
   const handleAddOS = () => {
-    if (!addForm.descricaoProblema) return;
+    const nextErrors: typeof formErrors = {};
+    if (!addForm.clienteId) nextErrors.clienteId = 'Selecione o cliente da OS.';
+    if (!addForm.veiculoId) nextErrors.veiculoId = 'Selecione o veículo atendido.';
+    if (!addForm.descricaoProblema.trim()) nextErrors.descricaoProblema = 'Descreva o problema relatado.';
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     const veiculo = veiculos.find(v => v.id === addForm.veiculoId);
     addOS({
       ...addForm,
@@ -68,6 +77,7 @@ export default function OSScreen() {
       valorPago: 0,
       dataEntrada: new Date().toISOString().split('T')[0],
     });
+    setFormErrors({});
     setAddForm({ clienteId: '', veiculoId: '', descricaoProblema: '', mecanicoResponsavel: 'Marcos' });
     setModalOpen(false);
   };
@@ -91,7 +101,7 @@ export default function OSScreen() {
         style={styles.list}
         data={filtered}
         keyExtractor={o => o.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 120 + insets.bottom }]}
         extraData={ordensServico}
         ListHeaderComponent={
           <>
@@ -150,7 +160,7 @@ export default function OSScreen() {
       />
 
       {/* Add Button */}
-      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary }]} onPress={() => setModalOpen(true)}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary, bottom: 82 + insets.bottom }]} onPress={() => setModalOpen(true)}>
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 
@@ -257,9 +267,42 @@ export default function OSScreen() {
           </View>
         }
       >
-        <Input label="Cliente" placeholder="Selecione um cliente" value={addForm.clienteId} onChangeText={v => setAddForm(f => ({ ...f, clienteId: v }))} />
-        <Input label="Veículo ID (manual)" placeholder="ID do veículo" value={addForm.veiculoId} onChangeText={v => setAddForm(f => ({ ...f, veiculoId: v }))} />
-        <Input label="Descrição do Problema" value={addForm.descricaoProblema} onChangeText={v => setAddForm(f => ({ ...f, descricaoProblema: v }))} multiline numberOfLines={3} />
+        <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>Cliente</Text>
+        <View style={styles.selectorRow}>
+          {clientes.map(cliente => {
+            const selected = addForm.clienteId === cliente.id;
+            return (
+              <TouchableOpacity
+                key={cliente.id}
+                style={[styles.selectorChip, { backgroundColor: selected ? t.primary : t.bg, borderColor: selected ? t.primary : t.border }]}
+                onPress={() => setAddForm(current => ({ ...current, clienteId: cliente.id, veiculoId: '' }))}
+              >
+                <Text style={{ color: selected ? '#FFF' : t.textSecondary, fontSize: 12, fontWeight: '600' }}>{cliente.nome}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {formErrors.clienteId ? <Text style={[styles.fieldError, { color: t.danger }]}>{formErrors.clienteId}</Text> : null}
+        <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>Veículo</Text>
+        <View style={styles.selectorRow}>
+          {veiculosDoCliente.map(veiculo => {
+            const selected = addForm.veiculoId === veiculo.id;
+            return (
+              <TouchableOpacity
+                key={veiculo.id}
+                style={[styles.selectorChip, { backgroundColor: selected ? t.primary : t.bg, borderColor: selected ? t.primary : t.border }]}
+                onPress={() => setAddForm(current => ({ ...current, veiculoId: veiculo.id }))}
+              >
+                <Text style={{ color: selected ? '#FFF' : t.textSecondary, fontSize: 12, fontWeight: '600' }}>{veiculo.marca} {veiculo.modelo} • {veiculo.placa}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {addForm.clienteId && veiculosDoCliente.length === 0 ? (
+            <Text style={{ color: t.textMuted, fontSize: 12 }}>Nenhum veículo cadastrado para este cliente.</Text>
+          ) : null}
+        </View>
+        {formErrors.veiculoId ? <Text style={[styles.fieldError, { color: t.danger }]}>{formErrors.veiculoId}</Text> : null}
+        <Input label="Descrição do Problema" value={addForm.descricaoProblema} onChangeText={v => setAddForm(f => ({ ...f, descricaoProblema: v }))} multiline numberOfLines={3} error={formErrors.descricaoProblema} />
         <Input label="Mecânico" value={addForm.mecanicoResponsavel} onChangeText={v => setAddForm(f => ({ ...f, mecanicoResponsavel: v }))} />
       </ModalShell>
     </Screen>
@@ -303,4 +346,8 @@ const styles = StyleSheet.create({
   statusOption: { paddingVertical: 14, borderBottomWidth: 1 },
   typeChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   inlineInput: { flex: 1 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8 },
+  fieldError: { fontSize: 12, marginBottom: 12, marginTop: -4 },
+  selectorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  selectorChip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1 },
 });

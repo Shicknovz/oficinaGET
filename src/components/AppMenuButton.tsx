@@ -1,14 +1,22 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
 import { useAppMenu } from '../context/AppMenuContext';
 
-const MENU_ROUTES = ['Dashboard', 'Clientes', 'OS', 'Financeiro'] as const;
+const MENU_ROUTES = [
+  { label: 'Home', path: '/(tabs)/HomeScreen' },
+  { label: 'Clientes', path: '/(tabs)/ClientesScreen' },
+  { label: 'Veículos', path: '/VeiculosScreen' },
+  { label: 'OS', path: '/(tabs)/OSScreen' },
+  { label: 'Agendamentos', path: '/AgendamentoScreen' },
+  { label: 'Estoque', path: '/EstoqueScreen' },
+  { label: 'Financeiro', path: '/(tabs)/FinanceiroScreen' },
+] as const;
 
 export default function AppMenuButton() {
   const t = useTheme();
-  const navigation = useNavigation<any>();
+  const router = useRouter();
   const menu = useAppMenu();
   const [visible, setVisible] = React.useState(false);
 
@@ -16,9 +24,9 @@ export default function AppMenuButton() {
     return null;
   }
 
-  const handleNavigate = (routeName: typeof MENU_ROUTES[number]) => {
+  const handleNavigate = (routePath: typeof MENU_ROUTES[number]['path']) => {
     setVisible(false);
-    navigation.navigate(routeName);
+    router.push(routePath);
   };
 
   const handleLogout = () => {
@@ -49,9 +57,9 @@ export default function AppMenuButton() {
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setVisible(false)} />
           <View style={[styles.menuContainer, { backgroundColor: t.bgCard }]}> 
             <Text style={[styles.menuTitle, { color: t.text }]}>Menu</Text>
-            {MENU_ROUTES.map((routeName) => (
-              <TouchableOpacity key={routeName} style={styles.menuItem} onPress={() => handleNavigate(routeName)}>
-                <Text style={[styles.menuItemText, { color: t.primary }]}>{routeName}</Text>
+            {MENU_ROUTES.map((routeItem) => (
+              <TouchableOpacity key={routeItem.path} style={styles.menuItem} onPress={() => handleNavigate(routeItem.path)}>
+                <Text style={[styles.menuItemText, { color: t.primary }]}>{routeItem.label}</Text>
               </TouchableOpacity>
             ))}
             <View style={[styles.menuDivider, { backgroundColor: t.border }]} />

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -9,25 +10,49 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Screen from '../components/Screen';
 import ActionSearchBar from '../components/ActionSearchBar';
+import ConfirmDialog from '../components/ConfirmDialog';
 import ModalShell from '../components/ModalShell';
 import SectionHero from '../components/SectionHero';
 
 export default function ClientesScreen() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const { clientes, veiculos, addCliente, updateCliente, deleteCliente } = useApp();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Cliente | null>(null);
   const [form, setForm] = useState({ nome: '', cpf: '', telefone: '', email: '', endereco: '' });
+  const [errors, setErrors] = useState<{ nome?: string; cpf?: string; telefone?: string; email?: string }>({});
+  const [pendingDelete, setPendingDelete] = useState<Cliente | null>(null);
 
   const filtered = useMemo(() =>
     clientes.filter(c => c.nome.toLowerCase().includes(search.toLowerCase()) || c.cpf.includes(search)),
     [clientes, search]
   );
 
-  const openAdd = () => { setEditing(null); setForm({ nome: '', cpf: '', telefone: '', email: '', endereco: '' }); setModalOpen(true); };
-  const openEdit = (c: Cliente) => { setEditing(c); setForm({ nome: c.nome, cpf: c.cpf, telefone: c.telefone, email: c.email, endereco: c.endereco }); setModalOpen(true); };
-  const save = () => { if (!form.nome) return; if (editing) { updateCliente({ ...editing, ...form }); } else { addCliente(form); } setModalOpen(false); };
+  const openAdd = () => {
+    setEditing(null);
+    setErrors({});
+    setForm({ nome: '', cpf: '', telefone: '', email: '', endereco: '' });
+    setModalOpen(true);
+  };
+  const openEdit = (c: Cliente) => {
+    setEditing(c);
+    setErrors({});
+    setForm({ nome: c.nome, cpf: c.cpf, telefone: c.telefone, email: c.email, endereco: c.endereco });
+    setModalOpen(true);
+  };
+  const save = () => {
+    const nextErrors: typeof errors = {};
+    if (!form.nome.trim()) nextErrors.nome = 'Informe o nome do cliente.';
+    if (!form.cpf.trim()) nextErrors.cpf = 'Informe o CPF para identificar o cliente.';
+    if (!form.telefone.trim()) nextErrors.telefone = 'Informe um telefone para contato.';
+    if (form.email && !form.email.includes('@')) nextErrors.email = 'Digite um e-mail válido.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    if (editing) { updateCliente({ ...editing, ...form }); } else { addCliente(form); }
+    setModalOpen(false);
+  };
 
   const getVeiculoCount = (clienteId: string) => veiculos.filter(v => v.clienteId === clienteId).length;
   const totalVeiculos = useMemo(() => veiculos.length, [veiculos]);
@@ -38,7 +63,7 @@ export default function ClientesScreen() {
         style={styles.list}
         data={filtered}
         keyExtractor={c => c.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 120 + insets.bottom }]}
         ListHeaderComponent={
           <>
             <SectionHero
@@ -68,7 +93,7 @@ export default function ClientesScreen() {
                   {getVeiculoCount(item.id)} veículo{getVeiculoCount(item.id) !== 1 ? 's' : ''}
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => deleteCliente(item.id)} style={{ padding: 8 }}>
+              <TouchableOpacity onPress={() => setPendingDelete(item)} style={{ padding: 8 }}>
                 <Ionicons name="trash-outline" size={20} color={t.danger} />
               </TouchableOpacity>
             </View>
@@ -77,7 +102,7 @@ export default function ClientesScreen() {
         ListEmptyComponent={<Text style={[styles.empty, { color: t.textMuted }]}>Nenhum cliente encontrado</Text>}
       />
 
-      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary }]} onPress={openAdd}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary, bottom: 82 + insets.bottom }]} onPress={openAdd}>
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 
@@ -94,12 +119,26 @@ export default function ClientesScreen() {
           </View>
         }
       >
-        <Input label="Nome" value={form.nome} onChangeText={v => setForm(f => ({ ...f, nome: v }))} />
-        <Input label="CPF" value={form.cpf} onChangeText={v => setForm(f => ({ ...f, cpf: v }))} keyboardType="numeric" />
-        <Input label="Telefone" value={form.telefone} onChangeText={v => setForm(f => ({ ...f, telefone: v }))} keyboardType="phone-pad" />
-        <Input label="Email" value={form.email} onChangeText={v => setForm(f => ({ ...f, email: v }))} keyboardType="email-address" />
+        <Input label="Nome" value={form.nome} onChangeText={v => setForm(f => ({ ...f, nome: v }))} error={errors.nome} />
+        <Input label="CPF" value={form.cpf} onChangeText={v => setForm(f => ({ ...f, cpf: v }))} keyboardType="numeric" error={errors.cpf} />
+        <Input label="Telefone" value={form.telefone} onChangeText={v => setForm(f => ({ ...f, telefone: v }))} keyboardType="phone-pad" error={errors.telefone} />
+        <Input label="Email" value={form.email} onChangeText={v => setForm(f => ({ ...f, email: v }))} keyboardType="email-address" error={errors.email} />
         <Input label="Endereço" value={form.endereco} onChangeText={v => setForm(f => ({ ...f, endereco: v }))} />
       </ModalShell>
+
+      <ConfirmDialog
+        visible={!!pendingDelete}
+        title="Excluir cliente"
+        message={`Deseja remover ${pendingDelete?.nome || 'este cliente'}? Essa ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            deleteCliente(pendingDelete.id);
+          }
+          setPendingDelete(null);
+        }}
+      />
     </Screen>
   );
 }

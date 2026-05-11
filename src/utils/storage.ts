@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 function getStorage() {
@@ -12,14 +13,23 @@ function getStorage() {
   return globalThis.localStorage;
 }
 
-export function readStorage<T>(key: string, fallback: T): T {
+export async function readStorage<T>(key: string, fallback: T): Promise<T> {
   try {
-    const storage = getStorage();
-    if (!storage) {
-      return fallback;
+    if (Platform.OS === 'web') {
+      const storage = getStorage();
+      if (!storage) {
+        return fallback;
+      }
+
+      const rawValue = storage.getItem(key);
+      if (!rawValue) {
+        return fallback;
+      }
+
+      return JSON.parse(rawValue) as T;
     }
 
-    const rawValue = storage.getItem(key);
+    const rawValue = await AsyncStorage.getItem(key);
     if (!rawValue) {
       return fallback;
     }
@@ -30,14 +40,21 @@ export function readStorage<T>(key: string, fallback: T): T {
   }
 }
 
-export function writeStorage<T>(key: string, value: T) {
+export async function writeStorage<T>(key: string, value: T): Promise<void> {
   try {
-    const storage = getStorage();
-    if (!storage) {
+    const serializedValue = JSON.stringify(value);
+
+    if (Platform.OS === 'web') {
+      const storage = getStorage();
+      if (!storage) {
+        return;
+      }
+
+      storage.setItem(key, serializedValue);
       return;
     }
 
-    storage.setItem(key, JSON.stringify(value));
+    await AsyncStorage.setItem(key, serializedValue);
   } catch {
   }
 }

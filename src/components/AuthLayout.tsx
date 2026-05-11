@@ -10,6 +10,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
@@ -46,6 +47,7 @@ export default function AuthLayout({
 }: Props) {
   const t = useTheme();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isWide = width >= 960;
   const isTablet = width >= 700;
 
@@ -56,7 +58,7 @@ export default function AuthLayout({
     >
       <ImageBackground source={{ uri: backgroundImage }} style={styles.background} imageStyle={styles.backgroundImage}>
         <View style={styles.backdrop} />
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(insets.top, 20), paddingBottom: Math.max(insets.bottom + 20, 28) }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.shell, isWide && styles.shellWide]}>
             <View style={[styles.heroPanel, isWide && styles.heroPanelWide]}>
               {onBack && (

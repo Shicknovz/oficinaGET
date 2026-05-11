@@ -17,8 +17,16 @@ export default function RegisterScreen({ onRegister, onBack }: Props) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; email?: string; senha?: string }>({});
 
   const handleRegister = () => {
+    const nextErrors: typeof errors = {};
+    if (!name.trim()) nextErrors.name = 'Informe seu nome completo.';
+    if (!email.trim()) nextErrors.email = 'Informe seu e-mail.';
+    else if (!email.includes('@')) nextErrors.email = 'Digite um e-mail válido.';
+    if (senha.trim().length < 6) nextErrors.senha = 'A senha deve ter pelo menos 6 caracteres.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -34,6 +42,7 @@ export default function RegisterScreen({ onRegister, onBack }: Props) {
         value={name}
         onChangeText={setName}
         autoCapitalize="words"
+        error={errors.name}
       />
       <Input
         label="E-mail"
@@ -43,6 +52,7 @@ export default function RegisterScreen({ onRegister, onBack }: Props) {
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
+        error={errors.email}
       />
       <Input
         label="Senha"
@@ -50,6 +60,7 @@ export default function RegisterScreen({ onRegister, onBack }: Props) {
         value={senha}
         onChangeText={setSenha}
         secureTextEntry
+        error={errors.senha}
       />
       <Button title="Criar cadastro" onPress={handleRegister} fullWidth icon="person-add" loading={loading} />
     </>

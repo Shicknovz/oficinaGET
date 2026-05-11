@@ -2,6 +2,7 @@
   "expo": {
     "name": "AUTOGET",
     "slug": "autoget",
+    "scheme": "autoget",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -20,12 +21,12 @@
       "package": "com.autoget.app",
       "softwareKeyboardLayoutMode": "pan"
     },
-    "web": {
-      
-    }
-    ,
+    "web": {},
     "extra": {
       "appCity": "Samambaia, Brasília/DF"
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

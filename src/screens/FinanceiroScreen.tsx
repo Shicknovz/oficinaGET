@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -16,10 +17,12 @@ type FilterType = 'todas' | 'receita' | 'despesa' | 'pendente';
 
 export default function FinanceiroScreen() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const { transacoes, addTransacao } = useApp();
   const [filter, setFilter] = useState<FilterType>('todas');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ descricao: '', valor: '', metodo: 'pix', tipo: 'receita' as 'receita' | 'despesa' });
+  const [errors, setErrors] = useState<{ descricao?: string; valor?: string }>({});
 
   const filtered = useMemo(() => {
     if (filter === 'pendente') return transacoes.filter(tr => tr.status === 'pendente');
@@ -33,8 +36,13 @@ export default function FinanceiroScreen() {
   const pendentes = useMemo(() => transacoes.filter(tr => tr.status === 'pendente').length, [transacoes]);
 
   const handleAdd = () => {
-    if (!form.descricao || !form.valor) return;
+    const nextErrors: typeof errors = {};
+    if (!form.descricao.trim()) nextErrors.descricao = 'Informe a descrição do lançamento.';
+    if (!form.valor || Number(form.valor) <= 0) nextErrors.valor = 'Digite um valor maior que zero.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     addTransacao({ descricao: form.descricao, valor: Number(form.valor), metodo: form.metodo as any, tipo: form.tipo, status: 'pago', data: new Date().toISOString().split('T')[0] });
+    setErrors({});
     setForm({ descricao: '', valor: '', metodo: 'pix', tipo: 'receita' });
     setModalOpen(false);
   };
@@ -45,7 +53,7 @@ export default function FinanceiroScreen() {
         style={styles.list}
         data={filtered}
         keyExtractor={tr => tr.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 120 + insets.bottom }]}
         ListHeaderComponent={
           <>
             <SectionHero
@@ -131,7 +139,7 @@ export default function FinanceiroScreen() {
       />
 
       {/* FAB */}
-      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary }]} onPress={() => setModalOpen(true)}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary, bottom: 82 + insets.bottom }]} onPress={() => setModalOpen(true)}>
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 
@@ -155,8 +163,8 @@ export default function FinanceiroScreen() {
             <Text style={{ color: form.tipo === 'despesa' ? '#FFF' : t.textSecondary }}>📉 Despesa</Text>
           </TouchableOpacity>
         </View>
-        <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} />
-        <Input label="Valor" value={form.valor} onChangeText={v => setForm(f => ({ ...f, valor: v }))} keyboardType="numeric" />
+        <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} error={errors.descricao} />
+        <Input label="Valor" value={form.valor} onChangeText={v => setForm(f => ({ ...f, valor: v }))} keyboardType="numeric" error={errors.valor} />
         <Text style={{ color: t.textSecondary, fontSize: 13, marginBottom: 6, fontWeight: '600' }}>Método</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
           {['pix', 'dinheiro', 'cartao', 'boleto'].map(m => (

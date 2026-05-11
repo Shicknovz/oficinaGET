@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useEffect, useState } from 'react';
 import type {
   Cliente,
   Veiculo,
@@ -120,6 +120,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null);
 
 type Action =
+  | { type: 'HYDRATE_STATE'; payload: State }
   | { type: 'ADD_CLIENTE'; payload: Cliente }
   | { type: 'UPDATE_CLIENTE'; payload: Cliente }
   | { type: 'DELETE_CLIENTE'; id: string }
@@ -158,6 +159,8 @@ const DEFAULT_STATE: State = {
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case 'HYDRATE_STATE':
+      return action.payload;
     case 'ADD_CLIENTE':
       return { ...state, clientes: [...state.clientes, action.payload] };
     case 'UPDATE_CLIENTE':
@@ -194,11 +197,36 @@ function reducer(state: State, action: Action): State {
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(reducer, undefined, () => readStorage(APP_DATA_STATE_KEY, DEFAULT_STATE));
+  const [state, dispatch] = useReducer(reducer, DEFAULT_STATE);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    writeStorage(APP_DATA_STATE_KEY, state);
-  }, [state]);
+    let mounted = true;
+
+    const hydrateAppState = async () => {
+      const storedState = await readStorage(APP_DATA_STATE_KEY, DEFAULT_STATE);
+      if (!mounted) {
+        return;
+      }
+
+      dispatch({ type: 'HYDRATE_STATE', payload: storedState });
+      setIsHydrated(true);
+    };
+
+    void hydrateAppState();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    void writeStorage(APP_DATA_STATE_KEY, state);
+  }, [isHydrated, state]);
 
   const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 
@@ -273,6 +301,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTransacao = useCallback((t: Omit<TransacaoFinanceira, 'id'>) => {
     dispatch({ type: 'ADD_TRANSACAO', payload: { ...t, id: genId() } });
   }, []);
+
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <AppContext.Provider value={{

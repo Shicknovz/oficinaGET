@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -15,11 +16,13 @@ import { formatCurrency } from '../utils/helpers';
 
 export default function EstoqueScreen() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const { pecas, addPeca, updatePeca, updatePecaEstoque } = useApp();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Peca | null>(null);
   const [form, setForm] = useState({ nome: '', codigo: '', quantidade: '0', estoqueMinimo: '5', precoCompra: '', precoVenda: '', fornecedor: '' });
+  const [errors, setErrors] = useState<{ nome?: string; codigo?: string; precoVenda?: string }>({});
 
   const filtered = useMemo(() =>
     pecas.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()) || p.codigo.toLowerCase().includes(search.toLowerCase())),
@@ -28,10 +31,15 @@ export default function EstoqueScreen() {
   const baixoEstoque = useMemo(() => pecas.filter(p => p.quantidade < p.estoqueMinimo).length, [pecas]);
   const criticas = useMemo(() => pecas.filter(p => p.quantidade === 0).length, [pecas]);
 
-  const openAdd = () => { setEditing(null); setForm({ nome: '', codigo: '', quantidade: '0', estoqueMinimo: '5', precoCompra: '', precoVenda: '', fornecedor: '' }); setModalOpen(true); };
-  const openEdit = (p: Peca) => { setEditing(p); setForm({ nome: p.nome, codigo: p.codigo, quantidade: String(p.quantidade), estoqueMinimo: String(p.estoqueMinimo), precoCompra: String(p.precoCompra), precoVenda: String(p.precoVenda), fornecedor: p.fornecedor }); setModalOpen(true); };
+  const openAdd = () => { setEditing(null); setErrors({}); setForm({ nome: '', codigo: '', quantidade: '0', estoqueMinimo: '5', precoCompra: '', precoVenda: '', fornecedor: '' }); setModalOpen(true); };
+  const openEdit = (p: Peca) => { setEditing(p); setErrors({}); setForm({ nome: p.nome, codigo: p.codigo, quantidade: String(p.quantidade), estoqueMinimo: String(p.estoqueMinimo), precoCompra: String(p.precoCompra), precoVenda: String(p.precoVenda), fornecedor: p.fornecedor }); setModalOpen(true); };
   const save = () => {
-    if (!form.nome) return;
+    const nextErrors: typeof errors = {};
+    if (!form.nome.trim()) nextErrors.nome = 'Informe o nome da peça.';
+    if (!form.codigo.trim()) nextErrors.codigo = 'Informe o código do item.';
+    if (!form.precoVenda || Number(form.precoVenda) <= 0) nextErrors.precoVenda = 'Informe um preço de venda válido.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     const data = { nome: form.nome, codigo: form.codigo, quantidade: Number(form.quantidade), estoqueMinimo: Number(form.estoqueMinimo), precoCompra: Number(form.precoCompra), precoVenda: Number(form.precoVenda), fornecedor: form.fornecedor };
     if (editing) {
       updatePeca({ ...editing, ...data });
@@ -51,7 +59,7 @@ export default function EstoqueScreen() {
       <FlatList
         data={filtered}
         keyExtractor={p => p.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 120 + insets.bottom }]}
         ListHeaderComponent={
           <>
             <SectionHero
@@ -134,15 +142,15 @@ export default function EstoqueScreen() {
           </View>
         }
       >
-        <Input label="Nome" value={form.nome} onChangeText={v => setForm(f => ({ ...f, nome: v }))} />
-        <Input label="Código" value={form.codigo} onChangeText={v => setForm(f => ({ ...f, codigo: v }))} />
+        <Input label="Nome" value={form.nome} onChangeText={v => setForm(f => ({ ...f, nome: v }))} error={errors.nome} />
+        <Input label="Código" value={form.codigo} onChangeText={v => setForm(f => ({ ...f, codigo: v }))} error={errors.codigo} />
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Input label="Qtd" value={form.quantidade} onChangeText={v => setForm(f => ({ ...f, quantidade: v }))} keyboardType="numeric" containerStyle={{ flex: 1 }} />
           <Input label="Estoque Mín." value={form.estoqueMinimo} onChangeText={v => setForm(f => ({ ...f, estoqueMinimo: v }))} keyboardType="numeric" containerStyle={{ flex: 1 }} />
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Input label="Preço Compra" value={form.precoCompra} onChangeText={v => setForm(f => ({ ...f, precoCompra: v }))} keyboardType="numeric" containerStyle={{ flex: 1 }} />
-          <Input label="Preço Venda" value={form.precoVenda} onChangeText={v => setForm(f => ({ ...f, precoVenda: v }))} keyboardType="numeric" containerStyle={{ flex: 1 }} />
+          <Input label="Preço Venda" value={form.precoVenda} onChangeText={v => setForm(f => ({ ...f, precoVenda: v }))} keyboardType="numeric" containerStyle={{ flex: 1 }} error={errors.precoVenda} />
         </View>
         <Input label="Fornecedor" value={form.fornecedor} onChangeText={v => setForm(f => ({ ...f, fornecedor: v }))} />
       </ModalShell>

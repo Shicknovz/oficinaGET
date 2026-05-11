@@ -33,22 +33,42 @@ const DEFAULT_UI_STATE: AppUiState = {
 };
 
 export default function App() {
-  const initialUiState = readStorage(APP_UI_STATE_KEY, DEFAULT_UI_STATE);
-  const [loggedIn, setLoggedIn] = useState(initialUiState.loggedIn);
-  const [showIntro, setShowIntro] = useState(initialUiState.showIntro);
-  const [showRegister, setShowRegister] = useState(initialUiState.showRegister);
-  const [showForgotPassword, setShowForgotPassword] = useState(initialUiState.showForgotPassword);
-  const [showChangePassword, setShowChangePassword] = useState(initialUiState.showChangePassword);
+  const [uiState, setUiState] = useState<AppUiState>(DEFAULT_UI_STATE);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  const { loggedIn, showIntro, showRegister, showForgotPassword, showChangePassword } = uiState;
 
   useEffect(() => {
-    writeStorage(APP_UI_STATE_KEY, {
-      loggedIn,
-      showIntro,
-      showRegister,
-      showForgotPassword,
-      showChangePassword,
-    });
-  }, [loggedIn, showIntro, showRegister, showForgotPassword, showChangePassword]);
+    let mounted = true;
+
+    const hydrateUiState = async () => {
+      const storedUiState = await readStorage(APP_UI_STATE_KEY, DEFAULT_UI_STATE);
+      if (!mounted) {
+        return;
+      }
+
+      setUiState(storedUiState);
+      setIsHydrated(true);
+    };
+
+    void hydrateUiState();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    void writeStorage(APP_UI_STATE_KEY, uiState);
+  }, [isHydrated, uiState]);
+
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <ThemeProvider>
@@ -58,31 +78,40 @@ export default function App() {
           <AppProvider>
             {loggedIn ? (
               showChangePassword ? (
-                <ChangePasswordScreen onBack={() => setShowChangePassword(false)} />
+                <ChangePasswordScreen onBack={() => setUiState((current) => ({ ...current, showChangePassword: false }))} />
               ) : (
                 <MainTabs
                   onLogout={() => {
-                    setLoggedIn(false);
-                    setShowRegister(false);
-                    setShowIntro(false);
-                    setShowForgotPassword(false);
-                    setShowChangePassword(false);
+                    setUiState((current) => ({
+                      ...current,
+                      loggedIn: false,
+                      showRegister: false,
+                      showIntro: false,
+                      showForgotPassword: false,
+                      showChangePassword: false,
+                    }));
                   }}
-                  onChangePassword={() => setShowChangePassword(true)}
+                  onChangePassword={() => setUiState((current) => ({ ...current, showChangePassword: true }))}
                 />
               )
             ) : showRegister ? (
-              <RegisterScreen onRegister={() => { setShowRegister(false); setShowIntro(false); }} onBack={() => setShowRegister(false)} />
+              <RegisterScreen onRegister={() => {
+                setUiState((current) => ({ ...current, showRegister: false, showIntro: false }));
+              }} onBack={() => setUiState((current) => ({ ...current, showRegister: false }))} />
             ) : showForgotPassword ? (
-              <ForgotPasswordScreen onBack={() => setShowForgotPassword(false)} />
+              <ForgotPasswordScreen onBack={() => setUiState((current) => ({ ...current, showForgotPassword: false }))} />
             ) : showIntro ? (
-              <IntroScreen onLogin={() => setShowIntro(false)} onRegister={() => setShowRegister(true)} onSkip={() => setShowIntro(false)} />
+              <IntroScreen
+                onLogin={() => setUiState((current) => ({ ...current, showIntro: false }))}
+                onRegister={() => setUiState((current) => ({ ...current, showRegister: true }))}
+                onSkip={() => setUiState((current) => ({ ...current, showIntro: false }))}
+              />
             ) : (
               <LoginScreen 
-                onLogin={() => setLoggedIn(true)} 
-                onBack={() => setShowIntro(true)} 
-                onRegister={() => setShowRegister(true)}
-                onForgotPassword={() => setShowForgotPassword(true)}
+                onLogin={() => setUiState((current) => ({ ...current, loggedIn: true }))} 
+                onBack={() => setUiState((current) => ({ ...current, showIntro: true }))} 
+                onRegister={() => setUiState((current) => ({ ...current, showRegister: true }))}
+                onForgotPassword={() => setUiState((current) => ({ ...current, showForgotPassword: true }))}
               />
             )}
           </AppProvider>

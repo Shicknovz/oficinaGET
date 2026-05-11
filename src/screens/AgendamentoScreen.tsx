@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -7,6 +8,7 @@ import type { Agendamento } from '../types';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import ConfirmDialog from '../components/ConfirmDialog';
 import Screen from '../components/Screen';
 import ModalShell from '../components/ModalShell';
 import SectionHero from '../components/SectionHero';
@@ -15,11 +17,14 @@ import { formatDateTime } from '../utils/helpers';
 
 export default function AgendamentoScreen() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const { agendamentos, clientes, veiculos, addAgendamento, updateAgendamento, deleteAgendamento } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [form, setForm] = useState({ clienteId: '', descricao: '', data: '', hora: '09:00' });
+  const [errors, setErrors] = useState<{ clienteId?: string; descricao?: string; data?: string; hora?: string }>({});
+  const [pendingDelete, setPendingDelete] = useState<Agendamento | null>(null);
 
   const getCliente = (id: string) => clientes.find(c => c.id === id)?.nome || '';
   const getVeiculo = (cid: string) => {
@@ -33,11 +38,21 @@ export default function AgendamentoScreen() {
   );
   const confirmados = useMemo(() => agendamentos.filter(a => a.status === 'confirmado').length, [agendamentos]);
   const pendentes = useMemo(() => agendamentos.filter(a => a.status === 'pendente').length, [agendamentos]);
+  const selectedClientVehicle = useMemo(
+    () => veiculos.find(v => v.clienteId === form.clienteId),
+    [form.clienteId, veiculos]
+  );
 
   const openDetail = (a: any) => { setSelected(a); setDetailOpen(true); };
 
   const handleAdd = () => {
-    if (!form.descricao || !form.data) return;
+    const nextErrors: typeof errors = {};
+    if (!form.clienteId) nextErrors.clienteId = 'Selecione um cliente para o agendamento.';
+    if (!form.descricao.trim()) nextErrors.descricao = 'Descreva o motivo do agendamento.';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.data)) nextErrors.data = 'Use o formato AAAA-MM-DD.';
+    if (!/^\d{2}:\d{2}$/.test(form.hora)) nextErrors.hora = 'Use o formato HH:MM.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
     addAgendamento({
       clienteId: form.clienteId || clientes[0]?.id,
       veiculoId: veiculos.find(v => v.clienteId === (form.clienteId || clientes[0]?.id))?.id || '',
@@ -45,6 +60,7 @@ export default function AgendamentoScreen() {
       dataHora: `${form.data}T${form.hora}:00`,
       status: 'pendente',
     });
+    setErrors({});
     setForm({ clienteId: '', descricao: '', data: '', hora: '09:00' });
     setModalOpen(false);
   };
@@ -59,7 +75,7 @@ export default function AgendamentoScreen() {
       <FlatList
         data={sorted}
         keyExtractor={a => a.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 96 + insets.bottom }]}
         ListHeaderComponent={
           <SectionHero
             eyebrow="Agenda da oficina"
@@ -86,7 +102,7 @@ export default function AgendamentoScreen() {
         ListEmptyComponent={<Text style={[styles.empty, { color: t.textMuted }]}>Nenhum agendamento</Text>}
       />
 
-      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary }]} onPress={() => setModalOpen(true)}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary, bottom: 24 + insets.bottom }]} onPress={() => setModalOpen(true)}>
         <Ionicons name="calendar" size={26} color="#FFF" />
       </TouchableOpacity>
 
@@ -99,7 +115,7 @@ export default function AgendamentoScreen() {
           footer={
             <View style={styles.modalActions}>
               <Button title={selected.status === 'confirmado' ? 'Desconfirmar' : 'Confirmar'} variant={selected.status === 'confirmado' ? 'outline' : 'success'} fullWidth onPress={() => toggleConfirm(selected)} style={styles.modalActionButton} />
-              <Button title="Excluir" variant="danger" fullWidth onPress={() => { deleteAgendamento(selected.id); setDetailOpen(false); }} style={styles.modalActionButton} />
+              <Button title="Excluir" variant="danger" fullWidth onPress={() => setPendingDelete(selected)} style={styles.modalActionButton} />
             </View>
           }
         >
@@ -136,11 +152,42 @@ export default function AgendamentoScreen() {
           </View>
         }
       >
-        <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} placeholder="Ex: Troca de óleo" />
-        <Input label="Data" value={form.data} onChangeText={v => setForm(f => ({ ...f, data: v }))} placeholder="AAAA-MM-DD" />
-        <Input label="Hora" value={form.hora} onChangeText={v => setForm(f => ({ ...f, hora: v }))} placeholder="HH:MM" />
-        <Input label="Cliente (ID ou nome)" value={form.clienteId} onChangeText={v => setForm(f => ({ ...f, clienteId: v }))} />
+        <Text style={[styles.fieldLabel, { color: t.textSecondary }]}>Cliente</Text>
+        <View style={styles.selectorRow}>
+          {clientes.map(cliente => {
+            const isSelected = form.clienteId === cliente.id;
+            return (
+              <TouchableOpacity
+                key={cliente.id}
+                style={[styles.selectorChip, { backgroundColor: isSelected ? t.primary : t.bg, borderColor: isSelected ? t.primary : t.border }]}
+                onPress={() => setForm(current => ({ ...current, clienteId: cliente.id }))}
+              >
+                <Text style={{ color: isSelected ? '#FFF' : t.textSecondary, fontSize: 12, fontWeight: '600' }}>{cliente.nome}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {errors.clienteId ? <Text style={[styles.fieldError, { color: t.danger }]}>{errors.clienteId}</Text> : null}
+        <Input label="Veículo selecionado" value={selectedClientVehicle ? `${selectedClientVehicle.marca} ${selectedClientVehicle.modelo} - ${selectedClientVehicle.placa}` : 'Nenhum veículo vinculado'} editable={false} />
+        <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} placeholder="Ex: Troca de óleo" error={errors.descricao} />
+        <Input label="Data" value={form.data} onChangeText={v => setForm(f => ({ ...f, data: v }))} placeholder="AAAA-MM-DD" error={errors.data} />
+        <Input label="Hora" value={form.hora} onChangeText={v => setForm(f => ({ ...f, hora: v }))} placeholder="HH:MM" error={errors.hora} />
       </ModalShell>
+
+      <ConfirmDialog
+        visible={!!pendingDelete}
+        title="Excluir agendamento"
+        message={`Deseja excluir o agendamento ${pendingDelete ? `de ${getCliente(pendingDelete.clienteId)}` : ''}?`}
+        confirmLabel="Excluir"
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete) {
+            deleteAgendamento(pendingDelete.id);
+            setDetailOpen(false);
+          }
+          setPendingDelete(null);
+        }}
+      />
     </Screen>
   );
 }
@@ -169,4 +216,8 @@ const styles = StyleSheet.create({
   detailSection: { paddingVertical: 12, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   detailLabel: { fontSize: 12, fontWeight: '600', marginBottom: 4 },
   detailValue: { fontSize: 15 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8 },
+  fieldError: { fontSize: 12, marginBottom: 12, marginTop: -4 },
+  selectorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  selectorChip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1 },
 });

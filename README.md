@@ -1,206 +1,164 @@
 # AUTOGET
 
-Sistema de gestão para oficina mecânica desenvolvido com `Expo`, `React Native` e `TypeScript`, com foco em operação diária, organização visual e demonstração de fluxo completo de atendimento.
+Sistema de gestão para oficina mecânica desenvolvido com `Expo`, `React Native`, `TypeScript` e `Expo Router`.
 
-## Visão geral
+## Destaques do projeto
 
-O `AUTOGET` simula o funcionamento de uma oficina moderna em uma única aplicação. O projeto foi estruturado para rodar em `web`, `android` e `ios`, usando dados locais com persistência no navegador para facilitar demonstração, testes visuais e evolução futura para backend real.
-
-Hoje o sistema já cobre:
-
-- tela de apresentação com CTA de login, cadastro e contato via WhatsApp;
-- autenticação demonstrativa;
-- dashboard com métricas e notificações acionáveis;
-- gestão de clientes;
-- gestão de veículos;
-- ordens de serviço;
-- agendamentos;
-- controle de estoque;
-- financeiro;
-- persistência local de estado na web.
+- autenticação demonstrativa com fluxo de `Intro`, `Login`, `Cadastro` e recuperação de senha;
+- navegação organizada com `Expo Router` e abas principais;
+- módulos de `Clientes`, `Veículos`, `OS`, `Agendamentos`, `Estoque` e `Financeiro`;
+- componentização com `Button`, `Input`, `Card`, `Screen`, `ModalShell` e outros componentes reutilizáveis;
+- gerenciamento de estado com `Context` e persistência local na web;
+- tema centralizado e interface responsiva para apresentação profissional.
 
 ## Tecnologias
 
-- `Expo`
+- `Expo SDK 54`
 - `React Native`
-- `React Navigation`
 - `TypeScript`
+- `Expo Router`
+- `React Navigation`
 - `React Native Web`
-- `PDFKit` para geração da documentação em PDF
 
-## Principais funcionalidades
-
-### Fluxo inicial
-
-- `IntroScreen`: landing page com carrossel, serviços, depoimentos e botão flutuante do WhatsApp.
-- `LoginScreen`: acesso demonstrativo ao sistema.
-- `RegisterScreen`: tela de cadastro simulada.
-
-### Módulos de negócio
-
-- `Dashboard`: indicadores operacionais, financeiros e notificações de agendamento.
-- `Clientes`: cadastro, edição, busca e exclusão.
-- `Veículos`: associação com clientes e controle de dados do veículo.
-- `OS`: criação de ordens, mudança de status e cálculo de itens.
-- `Agendamentos`: controle cronológico dos atendimentos.
-- `Estoque`: gerenciamento de peças e alerta visual de estoque baixo.
-- `Financeiro`: receitas, despesas, saldo e filtros por transação.
-
-### Recursos técnicos já implementados
-
-- estado global centralizado com `Context` + `Reducer`;
-- persistência local com `localStorage` na versão web;
-- tema claro/escuro centralizado;
-- componentes reutilizáveis para layout, botões, inputs, cards e badges de status;
-- menu hambúrguer compartilhado entre as telas principais;
-- documentação técnica em `Markdown`, `HTML` e `PDF`.
-
-## Estrutura do projeto
+## Estrutura principal
 
 ```text
 OficinaPro/
+├── app/
+│   ├── _layout.tsx
+│   ├── IntroScreen/
+│   ├── LoginScreen/
+│   ├── CadastroScreen/
+│   ├── ForgotPasswordScreen/
+│   ├── ChangePasswordScreen/
+│   ├── VeiculosScreen/
+│   ├── AgendamentoScreen/
+│   ├── EstoqueScreen/
+│   └── (tabs)/
+│       ├── _layout.tsx
+│       ├── HomeScreen/
+│       ├── ClientesScreen/
+│       ├── OSScreen/
+│       └── FinanceiroScreen/
+├── docs/
+│   └── APRESENTACAO_PROJETO.md
+├── src/
+│   ├── components/
+│   ├── context/
+│   ├── screens/
+│   ├── types/
+│   └── utils/
+├── app.json
 ├── App.tsx
 ├── package.json
-├── docs/
-│   ├── SISTEMA_AUTOGET.md
-│   ├── SISTEMA_AUTOGET.html
-│   ├── SISTEMA_AUTOGET.pdf
-│   └── generate-doc-pdf.js
-└── src/
-	├── components/
-	├── context/
-	├── navigation/
-	├── screens/
-	├── types/
-	└── utils/
+└── tsconfig.json
 ```
 
-## Arquitetura resumida
+## Como executar
 
-### `App.tsx`
-
-Controla o fluxo principal entre intro, login, cadastro e aplicação autenticada. Também salva o estado de interface para manter a experiência consistente na web.
-
-### `src/context/AppContext.tsx`
-
-É o núcleo do sistema. Centraliza as coleções principais:
-
-- clientes;
-- veículos;
-- ordens de serviço;
-- agendamentos;
-- peças;
-- transações financeiras.
-
-Além disso, expõe as ações de criação, edição, remoção e atualização consumidas pelas telas.
-
-### `src/navigation/MainTabs.tsx`
-
-Organiza as abas principais visíveis do app:
-
-- `Dashboard`
-- `Clientes`
-- `OS`
-- `Financeiro`
-
-### `src/components`
-
-Contém os blocos reutilizáveis de interface, como:
-
-- `Screen`
-- `Card`
-- `Button`
-- `Input`
-- `StatusBadge`
-- `AppMenuButton`
-
-## Pré-requisitos
-
-- `Node.js` LTS
-- `npm`
-- Expo via `npx`
-
-## Instalação
-
-Baixe o ZIP do `AutoGET`:
+### Instalar dependências
 
 ```powershell
-Baixe as dependências com:
 npm install
 ```
 
-## Execução
-
-### Ambiente padrão
+### Rodar em desenvolvimento
 
 ```powershell
 npm start
 ```
 
-### Web
+### Usar no iPhone com Expo Go
+
+No `Windows`, o simulador iOS do Xcode não está disponível. Mesmo assim, você pode testar no iPhone físico com `Expo Go`:
 
 ```powershell
-npm run web
+npm run ios:device
 ```
 
-### Android
+Depois, abra o app `Expo Go` no iPhone e escaneie o QR Code gerado no terminal.
+
+### Gerar build iOS em nuvem
+
+Para gerar um build iOS sem macOS local, use o `EAS Build`:
+
+```powershell
+npm run ios:build
+```
+
+Para build de produção:
+
+```powershell
+npm run ios:build:prod
+```
+
+Na primeira execução, o Expo pode pedir login e configuração do projeto no `EAS`.
+
+### Rodar no Android com Android Studio
+
+Use o `Android Studio` apenas para iniciar o emulador, depois rode o app pelo Expo:
 
 ```powershell
 npm run android
 ```
 
-### iOS
+Se quiser gerar e compilar o projeto nativo Android localmente:
 
 ```powershell
-npm run ios
+npm run android:native
 ```
 
-## Documentação técnica gerada
-
-O projeto já possui uma documentação completa do sistema em três formatos:
-
-- `docs/SISTEMA_AUTOGET.md`
-- `docs/SISTEMA_AUTOGET.html`
-- `docs/SISTEMA_AUTOGET.pdf`
-
-Para regenerar o PDF:
+### Diagnóstico rápido
 
 ```powershell
-npm run docs:pdf
+npm run doctor
 ```
 
-## Persistência de dados
+### Rodar na web
 
-Na versão web, o aplicativo salva informações no `localStorage` usando os utilitários em `src/utils/storage.ts`.
+```powershell
+npm run web
+```
 
-Chaves atualmente utilizadas:
+## Arquitetura resumida
 
-- `autoget:ui-state`
-- `autoget:data-state`
+- `app/_layout.tsx`: injeta `ThemeProvider`, `SessionProvider`, `AppProvider` e a pilha principal.
+- `app/(tabs)/_layout.tsx`: organiza as abas principais com `Expo Router`.
+- `src/context/AppContext.tsx`: centraliza dados de clientes, veículos, ordens, agendamentos, peças e transações.
+- `src/context/SessionContext.tsx`: controla autenticação demonstrativa e persistência do fluxo inicial.
+- `src/components`: reúne os componentes reutilizáveis do sistema.
+- `src/screens`: concentra a lógica visual dos módulos de negócio.
 
-Isso permite manter o estado da interface e os dados simulados entre recarregamentos do navegador.
+## Rotas principais
 
-## Observações importantes
+- `/IntroScreen`
+- `/LoginScreen`
+- `/CadastroScreen`
+- `/ForgotPasswordScreen`
+- `/ChangePasswordScreen`
+- `/(tabs)/HomeScreen`
+- `/(tabs)/ClientesScreen`
+- `/VeiculosScreen`
+- `/(tabs)/OSScreen`
+- `/AgendamentoScreen`
+- `/EstoqueScreen`
+- `/(tabs)/FinanceiroScreen`
 
-- a autenticação atual é demonstrativa;
-- os dados ainda não vêm de uma API real;
-- o projeto está pronto para futura integração com backend;
-- algumas telas existem no código mesmo quando não estão nas abas principais.
+## Apresentação
 
-## Próximos passos sugeridos
+O roteiro da apresentação está em `docs/APRESENTACAO_PROJETO.md`.
 
-- integrar backend real (`Supabase`, `Firebase` ou API própria);
-- implementar autenticação real com perfis;
-- expandir relatórios e exportações;
-- adicionar testes automatizados;
-- configurar lint, formatação e CI.
+## Observação sobre Android Studio
 
-## Repositório
+- este projeto usa `Expo Router` no fluxo gerenciado do Expo;
+- por isso, o `Android Studio` normalmente é usado para abrir o emulador Android;
+- não é necessário abrir um projeto `android/` manualmente para testar no emulador;
+- se você quiser um projeto nativo Android em pasta, use `npm run android:native`, que dispara o fluxo nativo local do Expo.
 
-Repositório informado no histórico do projeto:
+## Observação sobre iOS
 
-- `https://github.com/Shicknovz/oficinaGET`
-
-## Licença
-
-Este projeto está em desenvolvimento e pode ser adaptado conforme a necessidade da oficina ou da equipe responsável.
+- o projeto já está compatível com `iOS` no fluxo gerenciado do `Expo`;
+- no `Windows`, você não consegue abrir o simulador do `Xcode` localmente;
+- para teste local, use um `iPhone` com `Expo Go` e o comando `npm run ios:device`;
+- para instalar em iPhone ou gerar `.ipa`, use `EAS Build` com `npm run ios:build`;
+- o estado local do app hoje persiste totalmente na `web`; em `iOS` o app funciona, mas os dados demonstrativos reiniciam ao fechar/reabrir até que uma persistência nativa seja adicionada.
