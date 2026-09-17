@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/financeiro"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: pm.test('Transações listadas', function () { pm.response.to.have.status(200); });
+order: 5000

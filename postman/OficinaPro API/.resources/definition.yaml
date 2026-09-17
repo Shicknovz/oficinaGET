@@ -1,0 +1,12 @@
+$kind: collection
+description: Testes da API OficinaPro. Execute na ordem para criar dados e reutilizar token e IDs.
+variables:
+  baseUrl: http://localhost:3333
+  token: ""
+  email: ""
+  clienteId: ""
+  veiculoId: ""
+  ordemId: ""
+  pecaId: ""
+  agendamentoId: ""
+  transacaoId: ""

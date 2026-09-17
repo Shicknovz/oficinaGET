@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{baseUrl}}/clientes"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Clientes listados', function () { pm.response.to.have.status(200); });
+      pm.expect(pm.response.json()).to.be.an('array');
+order: 1000

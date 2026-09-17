@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "nome": "Usuário Postman",
+      "email": "postman-{{$timestamp}}@example.com",
+      "senha": "123456"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Usuário criado', function () { pm.response.to.have.status(201); });
+      const body = pm.response.json();
+      pm.expect(body.token).to.be.a('string');
+      pm.collectionVariables.set('token', body.token);
+      pm.collectionVariables.set('email', body.usuario.email);
+order: 1000

@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Cliente {
+  id           String   @id @default(uuid())
+  nome         String
+  telefone     String
+  email        String?
+  documento    String?
+  endereco     String?
+  observacoes  String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  veiculos     Veiculo[]
+  ordens       OrdemServico[]
+  agendamentos Agendamento[]
+
+  @@index([nome])
+  @@index([telefone])
+}
+
+model Veiculo {
+  id           String   @id @default(uuid())
+  clienteId    String
+  placa        String
+  marca        String
+  modelo       String
+  ano          Int?
+  cor          String?
+  quilometragem Int?
+  observacoes  String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  cliente      Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  ordens       OrdemServico[]
+  agendamentos Agendamento[]
+
+  @@unique([placa])
+  @@index([clienteId])
+}
+
+model OrdemServico {
+  id             String   @id @default(uuid())
+  clienteId      String
+  veiculoId      String
+  numero         String?
+  status         String
+  descricao      String
+  diagnostico    String?
+  valorTotal     Decimal  @default(0) @db.Decimal(12, 2)
+  dataAbertura   DateTime @default(now())
+  dataFechamento DateTime?
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+
+  cliente        Cliente @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  veiculo        Veiculo @relation(fields: [veiculoId], references: [id], onDelete: Restrict)
+  itens          ItemOrdemServico[]
+  transacoes     TransacaoFinanceira[]
+
+  @@index([clienteId])
+  @@index([veiculoId])
+  @@index([status])
+}
+
+model ItemOrdemServico {
+  id             String   @id @default(uuid())
+  ordemServicoId String
+  tipo           String
+  descricao      String
+  quantidade     Decimal  @default(1) @db.Decimal(12, 2)
+  valorUnitario  Decimal  @default(0) @db.Decimal(12, 2)
+  valorTotal     Decimal  @default(0) @db.Decimal(12, 2)
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+
+  ordemServico   OrdemServico @relation(fields: [ordemServicoId], references: [id], onDelete: Cascade)
+
+  @@index([ordemServicoId])
+}
+
+model Agendamento {
+  id           String   @id @default(uuid())
+  clienteId    String
+  veiculoId    String?
+  titulo       String
+  descricao    String?
+  data         DateTime
+  status       String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  cliente      Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  veiculo      Veiculo? @relation(fields: [veiculoId], references: [id], onDelete: SetNull)
+
+  @@index([clienteId])
+  @@index([veiculoId])
+  @@index([data])
+}
+
+model Peca {
+  id           String   @id @default(uuid())
+  nome         String
+  codigo       String?
+  fabricante   String?
+  quantidade   Int      @default(0)
+  estoqueMinimo Int     @default(0)
+  valorCusto   Decimal  @default(0) @db.Decimal(12, 2)
+  valorVenda   Decimal  @default(0) @db.Decimal(12, 2)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  @@unique([codigo])
+  @@index([nome])
+}
+
+model TransacaoFinanceira {
+  id             String   @id @default(uuid())
+  ordemServicoId String?
+  tipo           String
+  descricao      String
+  valor          Decimal  @db.Decimal(12, 2)
+  data           DateTime
+  categoria      String?
+  formaPagamento String?
+  criadoEm       DateTime @default(now())
+  atualizadoEm   DateTime @updatedAt
+
+  ordemServico   OrdemServico? @relation(fields: [ordemServicoId], references: [id], onDelete: SetNull)
+
+  @@index([ordemServicoId])
+  @@index([tipo])
+  @@index([data])
+}

@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{baseUrl}}/veiculos"
+method: GET
+headers:
+  Authorization: Bearer {{token}}
+scripts:
+  - type: afterResponse
+    code: pm.test('Veículos listados', function () { pm.response.to.have.status(200); });
+order: 1000

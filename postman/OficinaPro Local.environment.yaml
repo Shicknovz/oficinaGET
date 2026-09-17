@@ -1,0 +1,20 @@
+name: OficinaPro Local
+values:
+  - key: baseUrl
+    value: 'http://localhost:3333'
+  - key: token
+    value: ''
+  - key: email
+    value: ''
+  - key: clienteId
+    value: ''
+  - key: veiculoId
+    value: ''
+  - key: ordemId
+    value: ''
+  - key: pecaId
+    value: ''
+  - key: agendamentoId
+    value: ''
+  - key: transacaoId
+    value: ''

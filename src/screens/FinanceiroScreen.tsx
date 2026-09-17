@@ -1,0 +1,215 @@
+import React, { useState, useMemo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
+import { useApp } from '../context/AppContext';
+import Input from '../components/Input';
+import Button from '../components/Button';
+import Card from '../components/Card';
+import Screen from '../components/Screen';
+import ModalShell from '../components/ModalShell';
+import SectionHero from '../components/SectionHero';
+import StatusBadge from '../components/StatusBadge';
+import { formatCurrency, formatDate } from '../utils/helpers';
+
+type FilterType = 'todas' | 'receita' | 'despesa' | 'pendente';
+
+export default function FinanceiroScreen() {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  const { transacoes, addTransacao } = useApp();
+  const [filter, setFilter] = useState<FilterType>('todas');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState({ descricao: '', valor: '', metodo: 'pix', tipo: 'receita' as 'receita' | 'despesa' });
+  const [errors, setErrors] = useState<{ descricao?: string; valor?: string }>({});
+
+  const filtered = useMemo(() => {
+    if (filter === 'pendente') return transacoes.filter(tr => tr.status === 'pendente');
+    if (filter === 'receita' || filter === 'despesa') return transacoes.filter(tr => tr.tipo === filter);
+    return transacoes;
+  }, [transacoes, filter]);
+
+  const receitas = transacoes.filter(tr => tr.tipo === 'receita' && tr.status === 'pago').reduce((s, tr) => s + tr.valor, 0);
+  const despesas = transacoes.filter(tr => tr.tipo === 'despesa' && tr.status === 'pago').reduce((s, tr) => s + tr.valor, 0);
+  const saldo = receitas - despesas;
+  const pendentes = useMemo(() => transacoes.filter(tr => tr.status === 'pendente').length, [transacoes]);
+
+  const handleAdd = () => {
+    const nextErrors: typeof errors = {};
+    if (!form.descricao.trim()) nextErrors.descricao = 'Informe a descrição do lançamento.';
+    if (!form.valor || Number(form.valor) <= 0) nextErrors.valor = 'Digite um valor maior que zero.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    addTransacao({ descricao: form.descricao, valor: Number(form.valor), metodo: form.metodo as any, tipo: form.tipo, status: 'pago', data: new Date().toISOString().split('T')[0] });
+    setErrors({});
+    setForm({ descricao: '', valor: '', metodo: 'pix', tipo: 'receita' });
+    setModalOpen(false);
+  };
+
+  return (
+    <Screen scroll={false} contentStyle={styles.screenContent}>
+      <FlatList
+        style={styles.list}
+        data={filtered}
+        keyExtractor={tr => tr.id}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 120 + insets.bottom }]}
+        ListHeaderComponent={
+          <>
+            <SectionHero
+              eyebrow="Saúde financeira"
+              title="Acompanhe o caixa da oficina com clareza sobre entradas, saídas e valores pendentes."
+              subtitle="Analise os lançamentos financeiros e tome decisões com mais segurança para a operação da oficina."
+              image="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1600&q=80"
+              stats={[
+                { icon: 'trending-up-outline', value: formatCurrency(receitas), label: 'Receitas' },
+                { icon: 'trending-down-outline', value: formatCurrency(despesas), label: 'Despesas' },
+                { icon: 'time-outline', value: String(pendentes), label: 'Pendentes' },
+              ]}
+            />
+            <View style={styles.summaryCards}>
+              <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+                <View style={[styles.sumIcon, { backgroundColor: t.successBg }]}> 
+                  <Text style={{ fontSize: 20 }}>📈</Text>
+                </View>
+                <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Receitas</Text>
+                <Text style={{ color: t.success, fontSize: 18, fontWeight: '800' }}>{formatCurrency(receitas)}</Text>
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+                <View style={[styles.sumIcon, { backgroundColor: t.dangerBg }]}> 
+                  <Text style={{ fontSize: 20 }}>📉</Text>
+                </View>
+                <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Despesas</Text>
+                <Text style={{ color: t.danger, fontSize: 18, fontWeight: '800' }}>{formatCurrency(despesas)}</Text>
+              </View>
+              <View style={[styles.summaryCard, { backgroundColor: t.bgCard, borderColor: t.border }]}>
+                <View style={[styles.sumIcon, { backgroundColor: t.infoBg }]}> 
+                  <Text style={{ fontSize: 20 }}>💰</Text>
+                </View>
+                <Text style={{ color: t.textSecondary, fontSize: 13, marginTop: 6 }}>Saldo</Text>
+                <Text style={{ color: saldo >= 0 ? t.success : t.danger, fontSize: 18, fontWeight: '800' }}>{formatCurrency(saldo)}</Text>
+              </View>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterBar}
+              contentContainerStyle={styles.filterBarContent}
+            >
+              {[
+                { key: 'todas', label: 'Todas', icon: 'list' },
+                { key: 'receita', label: 'Receitas', icon: 'trending-up' },
+                { key: 'despesa', label: 'Despesas', icon: 'trending-down' },
+                { key: 'pendente', label: 'Pendentes', icon: 'time' },
+              ].map(f => (
+                <TouchableOpacity
+                  key={f.key}
+                  style={[styles.filterChip, { backgroundColor: filter === f.key ? t.primary : t.bgCard, borderColor: t.border }]}
+                  onPress={() => setFilter(f.key as FilterType)}
+                >
+                  <Ionicons name={f.icon as any} size={14} color={filter === f.key ? '#FFF' : t.textSecondary} style={{ marginRight: 4 }} />
+                  <Text style={{ color: filter === f.key ? '#FFF' : t.textSecondary, fontWeight: '600', fontSize: 13 }}>{f.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        }
+        renderItem={({ item }) => (
+          <Card>
+            <View style={styles.txRow}>
+              <View style={[styles.txIcon, { backgroundColor: item.tipo === 'receita' ? t.successBg : t.dangerBg }]}>
+                <Text style={{ fontSize: 20 }}>{item.tipo === 'receita' ? '📈' : '📉'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.txDesc, { color: t.text }]}>{item.descricao}</Text>
+                <Text style={{ color: t.textMuted, fontSize: 12 }}>
+                  {item.metodo.toUpperCase()} • {item.data ? formatDate(item.data) : '-'}
+                </Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[styles.txValue, { color: item.tipo === 'receita' ? t.success : t.danger }]}>
+                  {item.tipo === 'despesa' ? '-' : '+'}{formatCurrency(item.valor)}
+                </Text>
+                <StatusBadge status={item.status as any} />
+              </View>
+            </View>
+          </Card>
+        )}
+        ListEmptyComponent={<Text style={[styles.empty, { color: t.textMuted }]}>Nenhum lançamento financeiro encontrado</Text>}
+      />
+
+      {/* FAB */}
+      <TouchableOpacity style={[styles.fab, { backgroundColor: t.primary, bottom: 82 + insets.bottom }]} onPress={() => setModalOpen(true)}>
+        <Ionicons name="add" size={28} color="#FFF" />
+      </TouchableOpacity>
+
+      <ModalShell
+        visible={modalOpen}
+        title="Novo lançamento financeiro"
+        subtitle="Registre entradas e saídas da oficina para manter o controle financeiro sempre atualizado."
+        onClose={() => setModalOpen(false)}
+        footer={
+          <View style={styles.modalActions}>
+            <Button title="Cancelar" variant="outline" onPress={() => setModalOpen(false)} fullWidth style={styles.modalActionButton} />
+            <Button title="Adicionar" variant="success" onPress={handleAdd} fullWidth style={styles.modalActionButton} />
+          </View>
+        }
+      >
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
+          <TouchableOpacity style={[styles.typeChip, { backgroundColor: form.tipo === 'receita' ? t.success : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, tipo: 'receita' }))}>
+            <Text style={{ color: form.tipo === 'receita' ? '#FFF' : t.textSecondary }}>📈 Receita</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.typeChip, { backgroundColor: form.tipo === 'despesa' ? t.danger : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, tipo: 'despesa' }))}>
+            <Text style={{ color: form.tipo === 'despesa' ? '#FFF' : t.textSecondary }}>📉 Despesa</Text>
+          </TouchableOpacity>
+        </View>
+        <Input label="Descrição" value={form.descricao} onChangeText={v => setForm(f => ({ ...f, descricao: v }))} error={errors.descricao} />
+        <Input label="Valor" value={form.valor} onChangeText={v => setForm(f => ({ ...f, valor: v }))} keyboardType="numeric" error={errors.valor} />
+        <Text style={{ color: t.textSecondary, fontSize: 13, marginBottom: 6, fontWeight: '600' }}>Método</Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+          {['pix', 'dinheiro', 'cartao', 'boleto'].map(m => (
+            <TouchableOpacity key={m} style={[styles.methodChip, { backgroundColor: form.metodo === m ? t.primary : t.bg, borderColor: t.border }]} onPress={() => setForm(f => ({ ...f, metodo: m }))}>
+              <Text style={{ color: form.metodo === m ? '#FFF' : t.textSecondary, fontSize: 11, textTransform: 'capitalize' }}>{m}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ModalShell>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  screenContent: { flex: 1, minHeight: 0 },
+  summaryCards: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 16, gap: 10 },
+  summaryCard: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center' },
+  sumIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  filterBar: { flexGrow: 0 },
+  filterBarContent: { paddingVertical: 10, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
+  filterChip: { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8, alignItems: 'center' },
+  list: { flex: 1 },
+  listContent: { padding: 16, paddingBottom: 136 },
+  txRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  txIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  txDesc: { fontSize: 15, fontWeight: '500' },
+  txValue: { fontSize: 15, fontWeight: '700' },
+  typeChip: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
+  methodChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+  empty: { textAlign: 'center', marginTop: 48, fontSize: 16 },
+  fab: {
+    position: 'absolute',
+    bottom: 82,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 18px 28px rgba(6, 13, 28, 0.32)' }
+      : { elevation: 10, shadowColor: '#000', shadowOpacity: 0.32, shadowRadius: 12 }),
+  },
+  modalActions: { flexDirection: 'row', gap: 10 },
+  modalActionButton: { flex: 1 },
+});

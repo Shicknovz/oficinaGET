@@ -1,0 +1,10 @@
+# Use this workspace to collaborate
+workspace:
+  id: 473e0b54-b024-43cf-8ebb-ba9167cc9e38
+
+localResources:
+  collections:
+    - ../OficinaPro API
+  environments:
+    - ../OficinaPro-Local.postman_environment.json
+    - ../OficinaPro Local.environment.yaml
